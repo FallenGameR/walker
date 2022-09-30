@@ -1,10 +1,16 @@
-//extern crate walkdir;
+use clap::{Parser, Subcommand};
 use walkdir::WalkDir;
 
 fn main() {
     // into_iter does recursive walk
     // traverses alphabetically even when .contents_first(true) is called
-    for file in WalkDir::new("C:/Users/alexko/Downloads").contents_first(true).min_depth(1)
+
+    let regular = "C:/Users/alexko/Downloads";
+    let oneDrive = "d:/OneDrive/Projects/Coding/CoreXtAutomation/";
+    let oneDriveCyrilic = "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/";
+    let path = regular;
+
+    for file in WalkDir::new(oneDriveCyrilic).contents_first(true).min_depth(1)
         .into_iter()
         .filter_map(|file| file.ok())
     {
@@ -13,7 +19,11 @@ fn main() {
             println!("{}", file.path().display());
         }
         */
-        println!("{}", file.path().display());
+
+        //canonicalize(&self)
+        // / separators
+        // no prefix
+        println!("{:?}", file.path().display());
     }
 
 
@@ -37,27 +47,40 @@ for entry in walker.filter_entry(|e| !is_hidden(e)) {
 */
 
 /*
-rust analog requirements:
-- work with cyrillic folders
-- work with OneDrive folders / same_file_system
-- support excluded folders (env vars / settings file)
-- support both folder (cdf) and file and folder (codef) scenarios
-- be fast
-- work on relative paths (normalization)
-- traverse files first then drill into folders
-- support quick access (env vars) - add it to the end of list???
-- min/max depth (arguments / settings file)
-- folders will be returned first then their files (walker)
-- current folder . auto added for (codef) scenario
-- follow_links by default but can be omited
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// Optional name to operate on
+    name: Option<String>,
 
-settings:
-- args - easy direct overrides, win over anything
-- env variables? yes, easy to change behaviour between the systems
-- settings file that is set by env variable, useful defaults
+    /// Sets a custom config file
+    #[arg(short, long, value_name = "FILE")]
+    config: Option<PathBuf>,
 
-arguments:
-- let args: Vec<String> = env::args().collect();
+    /// Turn debugging information on
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    debug: u8,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+*/
+
+
+/*
+Requirements
+------------
+- excluded folders: optional list of names (taken from file?)
+- do list files: flag (cdf / codef)
+- be faster than similar PS code - test on huge folder
+- skip common prefix
+- inject quick lists: optiona list of paths
+- max depth: optional number
+- traversal order: flag
+- add current folder: flag
+- link traversal: flag
+- skip entries that start with dot: flag
+- skip hidden entries: flag
 
 
 https://docs.rs/clap/latest/clap/
