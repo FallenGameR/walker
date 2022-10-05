@@ -1,5 +1,49 @@
+/*
+https://docs.rs/clap/latest/clap/
+https://github.com/clap-rs/clap/tree/45241277043f2a8cc64230e18574b88b005e765c/examples
+https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
+*/
+
+use std::path::Path;
+
 use clap::{Parser, Subcommand};
 use walkdir::WalkDir;
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli<'a> {
+    /// Optional list of excluded folders names (taken from file)
+    excluded: Option<&'a [Path]>,
+
+    /// Flag that says if files are needed in the output (cdf / codef)
+    addFiles: bool,
+
+    /// Flag that says if the current folder is needed in the output
+    addCurrentFolder: bool,
+
+    /// Optional list of injected folders (favorites)
+    injected: Option<&'a [Path]>,
+
+    /// Optional maximum depth of traversal, unlimited by default
+    #[arg(short, long)]
+    depth: Option<usize>,
+
+    /// Flag that says if the most deep entries need to be displayed first
+    #[arg(short, long, value_name = "leaf")]
+    leafsFirst: bool,
+
+    /// Flag that says if the symbolic links need to be traversed
+    #[arg(short, long, value_name = "link")]
+    linkTraversal: bool,
+
+    /// Flag that says if the entries that start with dot need to be skipped (hidden on unix systems)
+    #[arg(short, long, value_name = ".")]
+    skipDots: bool,
+
+    /// Flag that says if the entries that have hidden NTFS attribute need to be skipped (hidden on windows systems)
+    #[arg(short, long, value_name = "h")]
+    skipHidden: bool,
+}
 
 fn main() {
     // into_iter does recursive walk
@@ -22,7 +66,8 @@ fn main() {
 
         //canonicalize(&self)
         // / separators
-        // no prefix
+        // skip common prefix
+
         println!("{:?}", file.path().display());
     }
 
@@ -44,46 +89,4 @@ let walker = WalkDir::new("foo").into_iter();
 for entry in walker.filter_entry(|e| !is_hidden(e)) {
     println!("{}", entry?.path().display());
 }
-*/
-
-/*
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-struct Cli {
-    /// Optional name to operate on
-    name: Option<String>,
-
-    /// Sets a custom config file
-    #[arg(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
-
-    /// Turn debugging information on
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    debug: u8,
-
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-*/
-
-
-/*
-Requirements
-------------
-- excluded folders: optional list of names (taken from file?)
-- do list files: flag (cdf / codef)
-- be faster than similar PS code - test on huge folder
-- skip common prefix
-- inject quick lists: optiona list of paths
-- max depth: optional number
-- traversal order: flag
-- add current folder: flag
-- link traversal: flag
-- skip entries that start with dot: flag
-- skip hidden entries: flag
-
-
-https://docs.rs/clap/latest/clap/
-https://github.com/clap-rs/clap/tree/45241277043f2a8cc64230e18574b88b005e765c/examples
-https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 */
