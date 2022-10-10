@@ -1,53 +1,52 @@
-/*
-https://docs.rs/clap/latest/clap/
-https://github.com/clap-rs/clap/tree/45241277043f2a8cc64230e18574b88b005e765c/examples
-https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
-*/
+/// Clap documentation: https://docs.rs/clap/latest/clap/
+/// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 
 use std::path::{Path, PathBuf};
 use clap::{Parser, Subcommand};
 use walkdir::WalkDir;
 
+/// Fast folder walker to be used as replacement for the default fzf walker
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    /// Optional maximum depth of traversal, unlimited by default
-    #[arg(short, long)]
-    depth: Option<usize>,
-
-    /// Flag that says if files are needed in the output (cdf / codef)
+    /// Add files to the output (cdf / codef)
     #[arg(short = 'f', long, value_name = "true|false")]
-    add_files: Option<bool>,
+    add_files: bool,
 
-    /// Flag that says if the current folder is needed in the output
+    /// Add the current folder to the output
     #[arg(short = 'c', long)]
-    add_current_folder: Option<bool>,
+    add_current_folder: bool,
 
-    /// Flag that says if the most deep entries need to be displayed first
-    #[arg(short = 'l', long, value_name = "leaf")]
-    leafs_first: Option<bool>,
-
-    /// Flag that says if the symbolic links need to be traversed
-    #[arg(short = 't', long, value_name = "link")]
-    link_traversal: Option<bool>,
-
-    /// Flag that says if the entries that start with dot need to be skipped (hidden on unix systems)
+    /// Add entries that start with dot to the output (hidden on unix systems)
     #[arg(short = '.', long, value_name = "dots")]
-    skip_dots: Option<bool>,
+    add_dots: bool,
 
-    /// Flag that says if the entries that have hidden NTFS attribute need to be skipped (hidden on windows systems)
+    /// Add entries with hidden NTFS attribute to the output (hidden on windows systems)
     #[arg(short = 'n', long, value_name = "hidden")]
-    skip_hidden: Option<bool>,
+    add_hidden: bool,
 
-    /// Optional list of excluded folders names (taken from file)
-    #[arg(short, long)]
-    excluded: Option<Vec<PathBuf>>,
+    /// List the most deep entries first
+    #[arg(short = 'l', long, value_name = "leaf")]
+    leafs_first: bool,
 
-    /// Optional list of injected folders (favorites)
+    /// Traverse symbolic links
+    #[arg(short = 't', long, value_name = "link")]
+    link_traversal: bool,
+
+    /// Maximum depth of traversal, unlimited by default
     #[arg(short, long)]
-    injected: Option<Vec<PathBuf>>,
+    depth: usize,
+
+    /// List of injected entries (favorites)
+    #[arg(short, long)]
+    injected: Vec<PathBuf>,
+
+    /// List of excluded entry names
+    #[arg(short, long)]
+    excluded: Vec<PathBuf>,
 }
 
+/// erer
 fn main() {
     let args = Cli::parse();
 
