@@ -5,47 +5,53 @@ https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/bo
 */
 
 use std::path::{Path, PathBuf};
-
 use clap::{Parser, Subcommand};
 use walkdir::WalkDir;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    /// Optional list of excluded folders names (taken from file)
-    excluded: Option<Vec<PathBuf>>,
-
-    /// Flag that says if files are needed in the output (cdf / codef)
-    add_files: bool,
-
-    /// Flag that says if the current folder is needed in the output
-    add_current_folder: bool,
-
-    /// Optional list of injected folders (favorites)
-    injected: Option<Vec<PathBuf>>,
-
+/*
     /// Optional maximum depth of traversal, unlimited by default
     #[arg(short, long)]
     depth: Option<usize>,
 
+    /// Optional list of excluded folders names (taken from file)
+    excluded: Option<Vec<PathBuf>>,
+
+    /// Optional list of injected folders (favorites)
+    injected: Option<Vec<PathBuf>>,
+
+    /// Flag that says if files are needed in the output (cdf / codef)
+    add_files: Option<bool>,
+
+    /// Flag that says if the current folder is needed in the output
+    add_current_folder: Option<bool>,
+
     /// Flag that says if the most deep entries need to be displayed first
-    #[arg(short, long, value_name = "leaf")]
-    leafs_first: bool,
+    #[arg(short = 'l', long, value_name = "leaf")]
+    leafs_first: Option<bool>,
 
     /// Flag that says if the symbolic links need to be traversed
-    #[arg(short, long, value_name = "link")]
-    link_traversal: bool,
+    #[arg(short = 't', long, value_name = "link")]
+    link_traversal: Option<bool>,
 
     /// Flag that says if the entries that start with dot need to be skipped (hidden on unix systems)
-    #[arg(short, long, value_name = ".")]
-    skip_dots: bool,
+    #[arg(short = '.', long, value_name = "dots")]
+    skip_dots: Option<bool>,
 
     /// Flag that says if the entries that have hidden NTFS attribute need to be skipped (hidden on windows systems)
-    #[arg(short, long, value_name = "h")]
-    skip_hidden: bool,
+    #[arg(short = 'n', long, value_name = "hidden")]
+    skip_hidden: Option<bool>,
+    */
 }
 
 fn main() {
+    let args = Cli::parse();
+
+}
+
+fn walk_folders(){
     // into_iter does recursive walk
     // traverses alphabetically even when .contents_first(true) is called
 
@@ -75,18 +81,20 @@ fn main() {
     // iter.follow_links(true) - start following symbolic links
 }
 
-/*
-use walkdir::{DirEntry, WalkDir};
+fn walk_hidden_folders() {
+    /*
+    use walkdir::{DirEntry, WalkDir};
 
-fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
-         .to_str()
-         .map(|s| s.starts_with("."))
-         .unwrap_or(false)
-}
+    fn is_hidden(entry: &DirEntry) -> bool {
+        entry.file_name()
+        .to_str()
+        .map(|s| s.starts_with("."))
+        .unwrap_or(false)
+    }
 
 let walker = WalkDir::new("foo").into_iter();
 for entry in walker.filter_entry(|e| !is_hidden(e)) {
     println!("{}", entry?.path().display());
 }
 */
+}
