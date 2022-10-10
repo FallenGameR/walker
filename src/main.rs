@@ -16,7 +16,7 @@ struct Cli {
     depth: Option<usize>,
 
     /// Flag that says if files are needed in the output (cdf / codef)
-    #[arg(short = 'f', long)]
+    #[arg(short = 'f', long, value_name = "true|false")]
     add_files: Option<bool>,
 
     /// Flag that says if the current folder is needed in the output
