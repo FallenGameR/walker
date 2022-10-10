@@ -11,21 +11,16 @@ use walkdir::WalkDir;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-/*
     /// Optional maximum depth of traversal, unlimited by default
     #[arg(short, long)]
     depth: Option<usize>,
 
-    /// Optional list of excluded folders names (taken from file)
-    excluded: Option<Vec<PathBuf>>,
-
-    /// Optional list of injected folders (favorites)
-    injected: Option<Vec<PathBuf>>,
-
     /// Flag that says if files are needed in the output (cdf / codef)
+    #[arg(short = 'f', long)]
     add_files: Option<bool>,
 
     /// Flag that says if the current folder is needed in the output
+    #[arg(short = 'c', long)]
     add_current_folder: Option<bool>,
 
     /// Flag that says if the most deep entries need to be displayed first
@@ -43,7 +38,14 @@ struct Cli {
     /// Flag that says if the entries that have hidden NTFS attribute need to be skipped (hidden on windows systems)
     #[arg(short = 'n', long, value_name = "hidden")]
     skip_hidden: Option<bool>,
-    */
+
+    /// Optional list of excluded folders names (taken from file)
+    #[arg(short, long)]
+    excluded: Option<Vec<PathBuf>>,
+
+    /// Optional list of injected folders (favorites)
+    #[arg(short, long)]
+    injected: Option<Vec<PathBuf>>,
 }
 
 fn main() {
