@@ -11,18 +11,20 @@ use cli::Cli;
 fn main() {
     let args = Cli::parse();
 
-}
-
-fn walk_folders(){
-    // into_iter does recursive walk
-    // traverses alphabetically even when .contents_first(true) is called
-
     let regular = "C:/Users/alexko/Downloads";
     let oneDrive = "d:/OneDrive/Projects/Coding/CoreXtAutomation/";
     let oneDriveCyrilic = "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/";
     let path = regular;
 
-    for file in WalkDir::new(oneDriveCyrilic).contents_first(true).min_depth(1)
+    walk(Path::new(path));
+}
+
+fn walk(path: &Path){
+    // into_iter does recursive walk
+    // traverses alphabetically even when .contents_first(true) is called
+
+
+    for file in WalkDir::new(path).contents_first(true).min_depth(1)
         .into_iter()
         .filter_map(|file| file.ok())
     {

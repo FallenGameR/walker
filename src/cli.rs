@@ -31,7 +31,7 @@ pub(crate) struct Cli {
 
     /// Maximum depth of traversal, unlimited by default
     #[arg(short, long)]
-    depth: usize,
+    depth: Option<usize>,
 
     /// List of injected entries (favorites)
     #[arg(short, long)]
