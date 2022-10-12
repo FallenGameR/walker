@@ -1,4 +1,5 @@
 /// Clap documentation: https://docs.rs/clap/latest/clap/
+/// How to test clap: https://www.fpcomplete.com/rust/command-line-parsing-clap/
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod cli;
 
