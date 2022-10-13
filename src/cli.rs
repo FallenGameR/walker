@@ -9,7 +9,7 @@ pub(crate) struct Cli {
     #[arg(short = 'f', long, value_name = "true|false")]
     pub add_files: bool,
 
-    /// * Add the current folder to the output
+    /// ? Add the current folder to the output
     #[arg(short = 'c', long)]
     pub add_current_folder: bool,
 
@@ -25,11 +25,11 @@ pub(crate) struct Cli {
     #[arg(short = 'l', long, value_name = "leaf")]
     pub leafs_first: bool,
 
-    /// * Traverse symbolic links
+    /// Traverse symbolic links
     #[arg(short = 't', long, value_name = "link")]
     pub link_traversal: bool,
 
-    /// * Maximum depth of traversal, unlimited by default
+    /// Maximum depth of traversal, unlimited by default
     #[arg(short, long)]
     pub depth: Option<usize>,
 

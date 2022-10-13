@@ -30,6 +30,15 @@ fn walk(args: &Cli){
 
     let mut walker = WalkDir::new(path);
     walker = walker.contents_first(args.leafs_first);
+    walker = walker.follow_links(args.link_traversal);
+
+    if args.add_current_folder {
+        walker = walker.min_depth(0);
+    }
+
+    if let Some(depth) = args.depth {
+        walker = walker.max_depth(depth);
+    }
 
     for file in walker.min_depth(1)
         .into_iter()
