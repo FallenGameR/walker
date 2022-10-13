@@ -59,6 +59,7 @@ fn walk(args: &Cli){
     let dirs = fs::read_dir(".foo").unwrap();
     let dirs = dirs.map(|file| file.unwrap().path());
 
+    // https://doc.rust-lang.org/std/option/index.html option docs
     for dir_entry in walker.into_iter().filter_entry(|dir_entry| test_traversal(dir_entry))
     {
         let item = dir_entry.unwrap();
