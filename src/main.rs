@@ -3,10 +3,11 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod cli;
 
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, fs::DirEntry};
 use clap::Parser;
 use walkdir::WalkDir;
 use cli::Cli;
+use std::fs;
 
 /// erer
 fn main() {
@@ -35,26 +36,26 @@ fn walk(args: &Cli){
     if args.add_current_folder {
         walker = walker.min_depth(0);
     }
+    else {
+        walker = walker.min_depth(1);
+    }
 
     if let Some(depth) = args.depth {
         walker = walker.max_depth(depth);
     }
 
-    for file in walker.min_depth(1)
-        .into_iter()
-        .filter_map(|file| file.ok())
+    for file in walker.into_iter().filter_map(|dir_entry| dir_entry.ok())
     {
-        /*
-        if file.metadata().unwrap().is_file() {
-            println!("{}", file.path().display());
+        if !args.add_files && file.metadata().unwrap().is_file() {
+            continue;
         }
-        */
 
         //canonicalize(&self)
         // / separators
         // skip common prefix
 
-        println!("{:?}", file.path().display());
+        let path = fs::canonicalize(file.path()).unwrap();
+        println!("{:?}", path.as_path().display().to_string().replace("\\","/"));
     }
 
 
