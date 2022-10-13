@@ -3,11 +3,10 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod cli;
 
-use std::{path::{Path, PathBuf}};
 use clap::Parser;
-use walkdir::{WalkDir, DirEntry};
 use cli::Cli;
-use std::fs;
+use std::{fs, path::PathBuf};
+use walkdir::{WalkDir, DirEntry};
 
 /// erer
 fn main() {
@@ -19,12 +18,9 @@ fn main() {
 }
 
 fn walk(args: &Cli){
-    // into_iter does recursive walk
-    // traverses alphabetically even when .contents_first(true) is called
-
     let regular = "C:/Users/alexko/Downloads";
-    let oneDrive = "d:/OneDrive/Projects/Coding/CoreXtAutomation/";
-    let oneDriveCyrilic = "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/";
+    // let oneDrive = "d:/OneDrive/Projects/Coding/CoreXtAutomation/";
+    // let oneDriveCyrilic = "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/";
     let default = PathBuf::from(regular);
 
     let path = args.path.as_ref().unwrap_or(&default);
@@ -53,7 +49,7 @@ fn walk(args: &Cli){
     }
 
     let test_traversal = |item: &DirEntry| -> bool {
-        if !args.add_files && is_dot(item){
+        if !args.add_dots && is_dot(item){
             return false;
         }
         true
@@ -75,23 +71,9 @@ fn walk(args: &Cli){
 
         // skip common prefix
 
-        let path = fs::canonicalize(item.path()).unwrap();
+        // looks like this resolves link traversal
+        //let path = fs::canonicalize(item.path()).unwrap();
+        let path = item.path().to_owned();
         println!("{:?}", path.as_path().display().to_string().replace("\\","/"));
     }
-}
-
-fn walk_hidden_folders() {
-    /*
-
-    fn is_hidden(entry: &DirEntry) -> bool {
-        entry.file_name()
-        .to_str()
-        .map(|s| s.starts_with("."))
-        .unwrap_or(false)
-    }
-
-for entry in walker.filter_entry(|e| !is_hidden(e)) {
-    println!("{}", entry?.path().display());
-}
-*/
 }

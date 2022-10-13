@@ -24,4 +24,5 @@ Options:
 
 ```ps1
 cargo run -- -p c:\Users\alexko\Documents\Powershell\Modules\ -t
+cargo run -- -p c:\Users\alexko\Documents\Powershell\Modules\ --add-dots
 ```
