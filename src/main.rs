@@ -3,9 +3,9 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod cli;
 
-use std::{path::{Path, PathBuf}, fs::DirEntry};
+use std::{path::{Path, PathBuf}};
 use clap::Parser;
-use walkdir::WalkDir;
+use walkdir::{WalkDir, DirEntry};
 use cli::Cli;
 use std::fs;
 
@@ -44,27 +44,44 @@ fn walk(args: &Cli){
         walker = walker.max_depth(depth);
     }
 
-    for file in walker.into_iter().filter_map(|dir_entry| dir_entry.ok())
+    fn is_dot(item: &DirEntry) -> bool {
+        item
+            .file_name()
+            .to_str()
+            .map(|s| s.starts_with("."))
+            .unwrap_or(false)
+    }
+
+    let test_traversal = |item: &DirEntry| -> bool {
+        if !args.add_files && is_dot(item){
+            return false;
+        }
+        true
+    };
+
+    for dir_entry in walker.into_iter().filter_entry(|dir_entry| test_traversal(dir_entry))
     {
-        if !args.add_files && file.metadata().unwrap().is_file() {
+        let item = dir_entry.unwrap();
+
+        if !args.add_files && item.metadata().unwrap().is_file() {
             continue;
         }
 
-        //canonicalize(&self)
-        // / separators
+        println!("  {:?}", item.file_name().to_str());
+
+        if !args.add_dots && is_dot(&item) {
+            continue;
+        }
+
         // skip common prefix
 
-        let path = fs::canonicalize(file.path()).unwrap();
+        let path = fs::canonicalize(item.path()).unwrap();
         println!("{:?}", path.as_path().display().to_string().replace("\\","/"));
     }
-
-
-    // iter.follow_links(true) - start following symbolic links
 }
 
 fn walk_hidden_folders() {
     /*
-    use walkdir::{DirEntry, WalkDir};
 
     fn is_hidden(entry: &DirEntry) -> bool {
         entry.file_name()
@@ -73,7 +90,6 @@ fn walk_hidden_folders() {
         .unwrap_or(false)
     }
 
-let walker = WalkDir::new("foo").into_iter();
 for entry in walker.filter_entry(|e| !is_hidden(e)) {
     println!("{}", entry?.path().display());
 }
