@@ -55,6 +55,10 @@ fn walk(args: &Cli){
         true
     };
 
+    // NOTE: it is fine to redefine variable type as long as there is another let
+    let dirs = fs::read_dir(".foo").unwrap();
+    let dirs = dirs.map(|file| file.unwrap().path());
+
     for dir_entry in walker.into_iter().filter_entry(|dir_entry| test_traversal(dir_entry))
     {
         let item = dir_entry.unwrap();
@@ -68,6 +72,8 @@ fn walk(args: &Cli){
         if !args.add_dots && is_dot(&item) {
             continue;
         }
+
+
 
         // skip common prefix
 
