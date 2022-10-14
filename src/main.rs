@@ -5,7 +5,6 @@ mod cli;
 
 use clap::Parser;
 use cli::Cli;
-use std::{fs, path::PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
 fn main() {
@@ -16,9 +15,8 @@ fn main() {
 
 fn walk(args: &Cli) {
     let current_folder = std::env::current_dir().unwrap();
-    let current_folder = PathBuf::from(".");
-    let path = args.path.as_ref().unwrap_or(&current_folder);
-    let mut walker = WalkDir::new(path);
+    let start_path = args.path.as_ref().unwrap_or(&current_folder);
+    let mut walker = WalkDir::new(start_path);
 
     walker = walker.contents_first(args.leafs_first);
     walker = walker.follow_links(args.link_traversal);
@@ -54,7 +52,9 @@ fn walk(args: &Cli) {
             continue;
         }
 
-        //println!("  {:?}", item.file_name().to_str());
+        if args.verbose {
+            println!("  {:?}", item.file_name().to_str());
+        }
 
         if !args.add_dots && is_dot(&item) {
             continue;
@@ -69,7 +69,8 @@ fn walk(args: &Cli) {
         let path = path.as_path();
         let path = path.display().to_string();
         let path = path.replace("\\", "/");
+        let (_, last) = path.split_at(start_path.as_os_str().len() + 1);
 
-        println!("{:?}", path);
+        println!("{}", last);
     }
 }

@@ -29,6 +29,10 @@ pub(crate) struct Cli {
     #[arg(short = 't', long, value_name = "link")]
     pub link_traversal: bool,
 
+    /// Verbose output for debugging
+    #[arg(short, long)]
+    pub verbose: bool,
+
     /// Maximum depth of traversal, unlimited by default
     #[arg(short, long)]
     pub depth: Option<usize>,
