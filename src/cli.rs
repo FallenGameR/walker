@@ -18,7 +18,7 @@ pub(crate) struct Cli {
     pub add_dots: bool,
 
     /// * Add entries with hidden NTFS attribute to the output (hidden on windows systems)
-    #[arg(short = 'n', long, value_name = "hidden")]
+    #[arg(short = 'w', long, value_name = "hidden")]
     pub add_hidden: bool,
 
     /// List the most deep entries first
