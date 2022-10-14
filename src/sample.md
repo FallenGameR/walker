@@ -23,6 +23,10 @@ Options:
 ```
 
 ```ps1
-cargo run -- -p c:\Users\alexko\Documents\Powershell\Modules\ -t
+$path = "d:/OneDrive/Projects/Coding/CoreXtAutomation/";
+$path = "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/";
+$path = "C:/Users/alexko/Downloads";
+
+cargo run -- -p $path -t
 cargo run -- -p c:\Users\alexko\Documents\Powershell\Modules\ --add-dots
 ```

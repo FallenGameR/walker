@@ -37,6 +37,10 @@ pub(crate) struct Cli {
     #[arg(short, long)]
     pub path: Option<PathBuf>,
 
+    /// * Regular expression that file names need to match
+    #[arg(short, long)]
+    pub regex: Option<String>,
+
     /// * List of injected entries (favorites)
     #[arg(short, long)]
     pub injected: Vec<PathBuf>,
