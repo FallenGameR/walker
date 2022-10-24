@@ -5,7 +5,7 @@ mod cli;
 
 use clap::Parser;
 use cli::Cli;
-use std::{fs, os::windows::prelude::*};
+use std::{fs, os::windows::prelude::*, path::{PathBuf, Path}};
 use walkdir::{DirEntry, WalkDir};
 
 fn main() {
@@ -31,17 +31,24 @@ fn is_hidden(item: &DirEntry) -> bool {
     false
 }
 
-fn walk(args: &Cli) {
-    // TODO: move into a function
+fn get_start_path(args: &Cli) -> PathBuf {
     let current_folder = std::env::current_dir().unwrap();
-    let start_path = args.path.as_ref().unwrap_or(&current_folder);
-    let mut walker = WalkDir::new(start_path);
+    let start_path = args.path.to_owned().unwrap_or(current_folder);
+    start_path
+}
 
-    // TODO: move into a function
+fn setup_walker<P: AsRef<Path>>(root_path: P, args: &Cli) -> WalkDir {
+    let mut walker = WalkDir::new(root_path);
     walker = walker.contents_first(args.leafs_first);
     walker = walker.follow_links(args.link_traversal);
     walker = walker.min_depth(if args.add_current_folder { 0 } else { 1 });
     walker = walker.max_depth(args.depth.unwrap_or(usize::MAX));
+    walker
+}
+
+fn walk(args: &Cli) {
+    let start_path = get_start_path(args);
+    let walker = setup_walker(&start_path, args);
 
     // TODO: move into a function
     // or better move into class (permitter/accepter) associated function
