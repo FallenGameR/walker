@@ -1,4 +1,4 @@
-use crate::cli::Args;
+use crate::args::Args;
 use std::{fs, os::windows::prelude::*};
 use walkdir::DirEntry;
 
