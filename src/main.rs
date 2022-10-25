@@ -9,6 +9,7 @@ fn main() {
     let args = Args::new();
     let walker = setup_walker(&args);
 
+    // Walk the dirs from the start path
     for dir_entry in walker
         .into_iter()
         .filter_entry(|item| accept::accept_path(&args, item))
@@ -20,11 +21,10 @@ fn main() {
                 }
                 continue;
             }
-            Ok(entry) => normalize(&entry),
+            Ok(entry) => normalize(&args, &entry),
         };
 
-        let to_render = prepare_for_render(&args, &path);
-        println!("{}", to_render);
+        println!("{}", path);
     }
 }
 
@@ -37,16 +37,12 @@ fn setup_walker(args: &Args) -> WalkDir {
     walker
 }
 
-fn normalize(item: &DirEntry) -> String {
+fn normalize(args: &Args, item: &DirEntry) -> String {
     // looks like this resolves link traversal
     // let path = fs::canonicalize(item.path()).unwrap();
 
     let path = item.path().display().to_string();
     let path = path.replace("\\", "/");
-    path
-}
-
-fn prepare_for_render<'a>(args: &Args, path: &'a String) -> &'a str {
-    let (_, last) = path.split_at(args.start_path.as_os_str().len()); // +1 if start_path does not end with / or \
-    last
+    let (_, path) = path.split_at(args.start_path_trim);
+    String::from( if path.is_empty() {"."} else {path} )
 }
