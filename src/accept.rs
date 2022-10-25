@@ -1,26 +1,8 @@
-use walkdir::DirEntry;
+use crate::cli::Args;
 use std::{fs, os::windows::prelude::*};
-use crate::cli::Cli;
+use walkdir::DirEntry;
 
-fn is_file(item: &DirEntry) -> bool {
-    if let Ok(meta) = item.metadata() {
-        return meta.is_file()
-    }
-    false
-}
-
-fn is_dot(item: &DirEntry) -> bool {
-    item.file_name().to_str().map_or(false, |s| s.starts_with("."))
-}
-
-fn is_hidden(item: &DirEntry) -> bool {
-    if let Ok(meta) = fs::metadata(&item.path()) {
-        return (meta.file_attributes() & 0x2) > 0
-    }
-    false
-}
-
-pub(crate) fn accept_path(args: &Cli, item: &DirEntry) -> bool {
+pub fn accept_path(args: &Args, item: &DirEntry) -> bool {
     if args.verbose {
         println!("- {:?}", item.file_name().to_str());
     }
@@ -38,4 +20,22 @@ pub(crate) fn accept_path(args: &Cli, item: &DirEntry) -> bool {
     }
 
     true
+}
+
+fn is_file(item: &DirEntry) -> bool {
+    if let Ok(meta) = item.metadata() {
+        return meta.is_file()
+    }
+    false
+}
+
+fn is_dot(item: &DirEntry) -> bool {
+    item.file_name().to_str().map_or(false, |s| s.starts_with("."))
+}
+
+fn is_hidden(item: &DirEntry) -> bool {
+    if let Ok(meta) = fs::metadata(&item.path()) {
+        return (meta.file_attributes() & 0x2) > 0
+    }
+    false
 }

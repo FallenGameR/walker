@@ -1,10 +1,10 @@
-use std::path::PathBuf;
 use clap::Parser;
+use std::path::PathBuf;
 
-/// * Fast folder walker to be used as replacement for the default fzf walker
+/// Fast folder walker to be used as replacement for the default fzf walker
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-pub(crate) struct Cli {
+pub struct Args {
     /// Start path from where to walk
     #[clap(skip)]
     pub start_path: PathBuf,
@@ -37,6 +37,10 @@ pub(crate) struct Cli {
     #[arg(short, long)]
     pub verbose: bool,
 
+    /// Turn debugging information on
+    #[arg(long)]
+    pub debug: bool,
+
     /// Maximum depth of traversal, unlimited by default
     #[arg(short, long)]
     pub depth: Option<usize>,
@@ -56,4 +60,13 @@ pub(crate) struct Cli {
     /// * List of excluded entry names
     #[arg(short, long)]
     pub excluded: Vec<PathBuf>,
+}
+
+impl Args {
+    pub fn new() -> Args {
+        let mut args = Args::parse();
+        let current_dir = std::env::current_dir().unwrap();
+        args.start_path = args.path.to_owned().unwrap_or(current_dir);
+        args
+    }
 }
