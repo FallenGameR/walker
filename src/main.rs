@@ -9,7 +9,11 @@ use std::{fs, os::windows::prelude::*, path::{PathBuf, Path}};
 use walkdir::{DirEntry, WalkDir};
 
 fn main() {
-    let args = Cli::parse();
+    let mut args = Cli::parse();
+    let current_folder = std::env::current_dir().unwrap();
+    let start_path = args.path.to_owned().unwrap_or(current_folder);
+    args.start_path = start_path;
+
     walk(&args);
 }
 
@@ -46,33 +50,31 @@ fn setup_walker<P: AsRef<Path>>(root_path: P, args: &Cli) -> WalkDir {
     walker
 }
 
+fn test_path(args: &Cli, item: &DirEntry) -> bool {
+    if args.verbose {
+        println!("- {:?}", item.file_name().to_str());
+    }
+
+    if !args.add_files && is_file(item) {
+        return false;
+    }
+
+    if !args.add_dots && is_dot(item) {
+        return false;
+    }
+
+    if !args.add_hidden && is_hidden(item) {
+        return false;
+    }
+
+    true
+}
+
 fn walk(args: &Cli) {
     let start_path = get_start_path(args);
     let walker = setup_walker(&start_path, args);
 
-    // TODO: move into a function
-    // or better move into class (permitter/accepter) associated function
-    let accept_path = |item: &DirEntry| -> bool {
-        if args.verbose {
-            println!("- {:?}", item.file_name().to_str());
-        }
-
-        if !args.add_files && is_file(item) {
-            return false;
-        }
-
-        if !args.add_dots && is_dot(item) {
-            return false;
-        }
-
-        if !args.add_hidden && is_hidden(item) {
-            return false;
-        }
-
-        true
-    };
-
-    for dir_entry in walker.into_iter().filter_entry(accept_path) {
+    for dir_entry in walker.into_iter().filter_entry(|item| test_path(args, item)) {
         // TODO: don't panic here
         let item = dir_entry.unwrap();
 

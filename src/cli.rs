@@ -5,6 +5,9 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Cli {
+    #[clap(skip)]
+    pub start_path: PathBuf,
+
     /// * Add files to the output (cdf / codef)
     #[arg(short = 'f', long, value_name = "true|false")]
     pub add_files: bool,
