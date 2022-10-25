@@ -5,6 +5,7 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Cli {
+    /// Start path from where to walk
     #[clap(skip)]
     pub start_path: PathBuf,
 
