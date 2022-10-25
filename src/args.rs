@@ -1,6 +1,8 @@
 use clap::Parser;
 use std::path::PathBuf;
 
+use crate::utils::normalize;
+
 /// Fast folder walker to be used as replacement for the default fzf walker
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -72,16 +74,13 @@ impl Args {
         let current_dir = std::env::current_dir().unwrap();
         args.start_path = args.path.to_owned().unwrap_or(current_dir);
 
-        //println!("{}", &args.start_path.display());
-
-        let start_path_rendered = args.start_path.display().to_string();
+        // Accounting for / and \ difference
+        // We want output paths to start with / and . path rendered as well
+        let start_path_rendered = normalize(args.start_path.display());
         args.start_path_trim = start_path_rendered.len();
 
         if start_path_rendered.ends_with("/") {
-            println!("ENDS!");
-            args.start_path_trim = start_path_rendered.len();
-
-            //args.start_path.as_os_str().len()
+            args.start_path_trim -= 1;
         }
 
         args

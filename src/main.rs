@@ -1,8 +1,10 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod accept;
 mod args;
+mod utils;
 
 use args::Args;
+use utils::normalize;
 use walkdir::{WalkDir, DirEntry};
 
 fn main() {
@@ -21,7 +23,7 @@ fn main() {
                 }
                 continue;
             }
-            Ok(entry) => normalize(&args, &entry),
+            Ok(entry) => normalize2(&args, &entry),
         };
 
         println!("{}", path);
@@ -37,12 +39,11 @@ fn setup_walker(args: &Args) -> WalkDir {
     walker
 }
 
-fn normalize(args: &Args, item: &DirEntry) -> String {
+fn normalize2(args: &Args, item: &DirEntry) -> String {
     // looks like this resolves link traversal
     // let path = fs::canonicalize(item.path()).unwrap();
 
-    let path = item.path().display().to_string();
-    let path = path.replace("\\", "/");
+    let path = normalize(item.path().display());
     let (_, path) = path.split_at(args.start_path_trim);
-    String::from( if path.is_empty() {"."} else {path} )
+    String::from( if path.len() <= 1 {"."} else {path} )
 }
