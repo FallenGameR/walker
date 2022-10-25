@@ -1,11 +1,9 @@
-/// Clap documentation: https://docs.rs/clap/latest/clap/
-/// How to test clap: https://www.fpcomplete.com/rust/command-line-parsing-clap/
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod accept;
-mod cli;
+mod args;
 
-use cli::Args;
-use walkdir::WalkDir;
+use args::Args;
+use walkdir::{WalkDir, DirEntry};
 
 fn main() {
     let args = Args::new();
@@ -15,29 +13,18 @@ fn main() {
         .into_iter()
         .filter_entry(|item| accept::accept_path(&args, item))
     {
-        // Get next entry
-        let item = match dir_entry {
-            Err(err) => {
+        let path = match dir_entry {
+            Err(error) => {
                 if args.debug {
-                    eprintln!("ERR: {:?}", err);
+                    eprintln!("ERR: {:?}", error);
                 }
                 continue;
             }
-            Ok(item) => item,
+            Ok(entry) => normalize(&entry),
         };
 
-        // TODO: move into a function
-        let path = item.path();
-        let path = path.to_owned();
-        let path = path.as_path();
-        let path = path.display().to_string();
-        let path = path.replace("\\", "/");
-        let (_, last) = path.split_at(args.start_path.as_os_str().len()); // +1 if start_path does not end with / or \
-
-        // looks like this resolves link traversal
-        //let path = fs::canonicalize(item.path()).unwrap();
-
-        println!("{}", last);
+        let to_render = prepare_for_render(&args, &path);
+        println!("{}", to_render);
     }
 }
 
@@ -48,4 +35,18 @@ fn setup_walker(args: &Args) -> WalkDir {
     walker = walker.min_depth(if args.add_current_folder { 0 } else { 1 });
     walker = walker.max_depth(args.depth.unwrap_or(usize::MAX));
     walker
+}
+
+fn normalize(item: &DirEntry) -> String {
+    // looks like this resolves link traversal
+    // let path = fs::canonicalize(item.path()).unwrap();
+
+    let path = item.path().display().to_string();
+    let path = path.replace("\\", "/");
+    path
+}
+
+fn prepare_for_render<'a>(args: &Args, path: &'a String) -> &'a str {
+    let (_, last) = path.split_at(args.start_path.as_os_str().len()); // +1 if start_path does not end with / or \
+    last
 }
