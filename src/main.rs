@@ -41,6 +41,12 @@ fn setup_walker(args: &Args) -> WalkDir {
 
 fn trim(args: &Args, item: &DirEntry) -> String {
     let path = normalize(item.path().display());
-    let (_, path) = path.split_at(args.start_prefix_len);
-    String::from( if path.len() <= 1 {"."} else {path} )
+
+    if !args.absolute {
+        let (_, path) = path.split_at(args.start_prefix_len);
+        String::from( if path.len() <= 1 {"."} else {path} )
+    }
+    else {
+        path
+    }
 }

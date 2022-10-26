@@ -39,6 +39,10 @@ pub struct Args {
     #[arg(short = 't', long, value_name = "link")]
     pub link_traversal: bool,
 
+    /// Use absolute paths, don't trim the output
+    #[arg(short, long)]
+    pub absolute: bool,
+
     /// ** Verbose output for debugging
     #[arg(short, long)]
     pub verbose: bool,
@@ -93,13 +97,14 @@ impl Args {
         };
 
         // Make sure correct slashes are used
-        let mut path = path.display().to_string().replace("\\", "/");
+        let mut path = path.display().to_string().replace("/", "\\");
 
-        // Make sure trailing slash is removed
-        if path.ends_with("/") {
-            let mut chars = path.chars();
-            chars.next_back();
-            path = chars.as_str().to_string();
+        // Make sure trailing slash is present
+        if !path.ends_with("\\") {
+            path.push('\\');
+            //let mut chars = path.chars();
+            //chars.next_back();
+            //path = chars.as_str().to_string();
         }
 
         // Make it an owned path
@@ -109,7 +114,7 @@ impl Args {
     pub fn new() -> Args {
         let mut args = Args::parse();
         args.start_dir = Self::resolve_start_dir(&args.path);
-        args.start_prefix_len = normalize(args.start_dir.display()).len();
+        args.start_prefix_len = normalize(args.start_dir.display()).len() - 1;
         args
     }
 }
