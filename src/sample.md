@@ -27,4 +27,6 @@ cargo run -- -p "d:/OneDrive/Projects/Coding/CoreXtAutomation/"
 cargo run -- -p "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/"
 cargo run -- -p "C:/Users/alexko/Downloads"
 cargo run -- -p "d:\" -d1 -c
+cargo run -- -p "C:/" -vd1
+cargo run -- -p "C:/" -wvd1
 ```
