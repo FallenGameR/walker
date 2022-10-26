@@ -73,44 +73,43 @@ impl Args {
     // - is a folder
     // - needs to use correct /\
     // - needs not to have trailing /
-    fn resolve_start_dir(path: Option<PathBuf>) -> PathBuf {
+    fn resolve_start_dir(path: &Option<String>) -> PathBuf {
         // Resolve initial value
         let path = match path {
-            Some(path) => path,
-            None => std::env::current_dir().unwrap(),
+            Some(path) => PathBuf::from(path),
+            None => std::env::current_dir().unwrap(), // uses \ no trailing \
         };
 
-        // Make sure is is a folder
-        let meta = match path.metadata() {
-            Ok(meta) => meta,
-            Err(err) => panic!("ERR: could not get file or directory metadata for {}, error is {}", path.display(), err),
+        // Make sure it is a folder
+        match path.metadata() {
+            Ok(meta) => if !meta.is_dir() {
+                panic!("ERR: path {} needs be a dirrectory but it was not", path.display());
+            },
+            Err(error) => panic!(
+                "ERR: could not get file or directory \
+                metadata for {}, error is {}",
+                path.display(),
+                error),
         };
 
-        if !meta.is_dir() {
-            panic!("ERR: path needs be a dirrectory not {}", path.display());
+        // Make sure correct slashes are used
+        let mut path = path.display().to_string().replace("\\", "/");
+
+        // Make sure trailing slash is removed
+        if path.ends_with("/") {
+            let mut chars = path.chars();
+            chars.next_back();
+            path = chars.as_str().to_string();
         }
 
-        //
-
-        path
+        // Make it an owned path
+        PathBuf::from(path)
     }
 
     pub fn new() -> Args {
         let mut args = Args::parse();
-        let current_dir = std::env::current_dir().unwrap();
-        args.start_dir = args.path.to_owned().unwrap_or(current_dir);
-
-        // Accounting for / and \ difference
-        // We want output paths to start with / and . path rendered as well
-        let start_dir_rendered = normalize(args.start_dir.display());
-        args.start_prefix_len = start_dir_rendered.len();
-
-        if start_dir_rendered.ends_with("/") {
-            args.start_prefix_len -= 1;
-        }
-
+        args.start_dir = Self::resolve_start_dir(&args.path);
+        args.start_prefix_len = normalize(args.start_dir.display()).len();
         args
     }
-
-
 }

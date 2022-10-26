@@ -23,7 +23,7 @@ fn main() {
                 }
                 continue;
             }
-            Ok(entry) => normalize2(&args, &entry),
+            Ok(entry) => trim(&args, &entry),
         };
 
         println!("{}", path);
@@ -39,10 +39,7 @@ fn setup_walker(args: &Args) -> WalkDir {
     walker
 }
 
-fn normalize2(args: &Args, item: &DirEntry) -> String {
-    // looks like this resolves link traversal
-    // let path = fs::canonicalize(item.path()).unwrap();
-
+fn trim(args: &Args, item: &DirEntry) -> String {
     let path = normalize(item.path().display());
     let (_, path) = path.split_at(args.start_prefix_len);
     String::from( if path.len() <= 1 {"."} else {path} )
