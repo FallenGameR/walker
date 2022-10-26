@@ -42,6 +42,8 @@ fn setup_walker(args: &Args) -> WalkDir {
     walker
 }
 
+// Walk dir has problems enumerating paths from the root drives =(
+
 fn trim(args: &Args, item: &DirEntry) -> String {
     // add . before / - otherwise it looks like a absolute path in unix
     let path = normalize(item.path().display());

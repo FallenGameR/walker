@@ -2,27 +2,47 @@ use crate::args::Args;
 use std::{fs, os::windows::prelude::*};
 use walkdir::DirEntry;
 
-pub fn accept_path(args: &Args, item: &DirEntry) -> bool {
-    if args.verbose {
-        println!("- {:?}", item.file_name().to_str());
-    }
+// The debug version
+//#[cfg(feature = "my_debug")]
+macro_rules! debug_print {
+    ($( $args:expr ),*) => { eprintln!( $( $args ),* ); }
+}
 
+// Non-debug version
+//#[cfg(not(feature = "my_debug"))]
+//macro_rules! debug_print {
+//    ($( $args:expr ),*) => {}
+//}
+
+fn main() {
+    debug_print!("Debug only {}", 123);
+}
+
+pub fn accept_path(args: &Args, item: &DirEntry) -> bool {
     if !args.add_files && is_file(item) {
-        println!("-- {:?} is_file, excluded", item.file_name().to_str());
+        if args.verbose {
+            eprintln!("dbg> {} - not accepted, is_file", item.path().display());
+        }
         return false;
     }
 
     if !args.add_dots && is_dot(item) {
-        println!("-- {:?} is_dot, excluded", item.file_name().to_str());
+        if args.verbose {
+            eprintln!("dbg> {} - not accepted, is_dot", item.path().display());
+        }
         return false;
     }
 
     if !args.add_hidden && is_hidden(item) {
-        println!("-- {:?} is_hidden, excluded", item.file_name().to_str());
+        if args.verbose {
+            eprintln!("dbg> {} - not accepted, is_hidden", item.path().display());
+        }
         return false;
     }
 
-    println!("-- {:?} ADDED", item.file_name().to_str());
+    if args.verbose {
+        eprintln!("dbg> {} - accepted", item.path().display());
+    }
     true
 }
 
