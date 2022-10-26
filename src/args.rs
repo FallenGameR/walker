@@ -15,6 +15,10 @@ pub struct Args {
     #[clap(skip)]
     pub start_prefix_len: usize,
 
+    /// If start path is the root of a drive
+    #[clap(skip)]
+    pub start_is_drive_root: bool,
+
     /// Add files to the output (cdf / codef)
     #[arg(short = 'f', long, value_name = "true|false")]
     pub add_files: bool,
@@ -102,9 +106,6 @@ impl Args {
         // Make sure trailing slash is present
         if !path.ends_with("\\") {
             path.push('\\');
-            //let mut chars = path.chars();
-            //chars.next_back();
-            //path = chars.as_str().to_string();
         }
 
         // Make it an owned path
@@ -114,7 +115,8 @@ impl Args {
     pub fn new() -> Args {
         let mut args = Args::parse();
         args.start_dir = Self::resolve_start_dir(&args.path);
-        args.start_prefix_len = normalize(args.start_dir.display()).len() - 1;
+        args.start_prefix_len = normalize(args.start_dir.display()).len();
+        args.start_is_drive_root = args.start_dir.parent().is_none();
         args
     }
 }

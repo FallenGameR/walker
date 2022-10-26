@@ -34,19 +34,22 @@ fn setup_walker(args: &Args) -> WalkDir {
     let mut walker = WalkDir::new(&args.start_dir);
     walker = walker.contents_first(args.leafs_first);
     walker = walker.follow_links(args.link_traversal);
-    walker = walker.min_depth(if args.add_current_folder { 0 } else { 1 });
+    // this is broken for root paths like d:\
+    // for these paths we need to add min depth of 1 in order to start enumeration
+    // and explicitly add d:\ as the output folder
+    walker = walker.min_depth(0);
     walker = walker.max_depth(args.depth.unwrap_or(usize::MAX));
     walker
 }
 
 fn trim(args: &Args, item: &DirEntry) -> String {
+    // add . before / - otherwise it looks like a absolute path in unix
     let path = normalize(item.path().display());
 
-    if !args.absolute {
-        let (_, path) = path.split_at(args.start_prefix_len);
-        String::from( if path.len() <= 1 {"."} else {path} )
+    if args.absolute {
+        return path
     }
-    else {
-        path
-    }
+
+    let path = "./".to_owned() + path.split_at(args.start_prefix_len).1;
+    path
 }

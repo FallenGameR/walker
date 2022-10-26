@@ -8,14 +8,17 @@ pub fn accept_path(args: &Args, item: &DirEntry) -> bool {
     }
 
     if !args.add_files && is_file(item) {
+        println!("-- is_file, excluded");
         return false;
     }
 
     if !args.add_dots && is_dot(item) {
+        println!("-- is_dot, excluded");
         return false;
     }
 
     if !args.add_hidden && is_hidden(item) {
+        println!("-- is_hidden, excluded");
         return false;
     }
 
@@ -34,8 +37,24 @@ fn is_dot(item: &DirEntry) -> bool {
 }
 
 fn is_hidden(item: &DirEntry) -> bool {
+    //println!("TEST {}", item.path().display());
+
     if let Ok(meta) = fs::metadata(&item.path()) {
-        return (meta.file_attributes() & 0x2) > 0
+        //println!("META {}", meta.file_attributes());
+        let attributes = meta.file_attributes();
+        let hidden = (attributes & 0x2) != 0;
+        let system = (attributes & 0x4) != 0;
+        let directory = (attributes & 0x16) != 0;
+
+        if hidden {
+            // Drive roots have hidden flag set but we need to list them regardless.
+            if hidden && system && directory && item.path().parent().is_none() {
+                return false
+            }
+            return true;
+        }
     }
+
+    //println!("META no");
     false
 }
