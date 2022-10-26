@@ -8,20 +8,21 @@ pub fn accept_path(args: &Args, item: &DirEntry) -> bool {
     }
 
     if !args.add_files && is_file(item) {
-        println!("-- is_file, excluded");
+        println!("-- {:?} is_file, excluded", item.file_name().to_str());
         return false;
     }
 
     if !args.add_dots && is_dot(item) {
-        println!("-- is_dot, excluded");
+        println!("-- {:?} is_dot, excluded", item.file_name().to_str());
         return false;
     }
 
     if !args.add_hidden && is_hidden(item) {
-        println!("-- is_hidden, excluded");
+        println!("-- {:?} is_hidden, excluded", item.file_name().to_str());
         return false;
     }
 
+    println!("-- {:?} ADDED", item.file_name().to_str());
     true
 }
 
