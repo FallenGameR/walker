@@ -31,7 +31,7 @@ fn main() {
 }
 
 fn setup_walker(args: &Args) -> WalkDir {
-    let mut walker = WalkDir::new(&args.start_path);
+    let mut walker = WalkDir::new(&args.start_dir);
     walker = walker.contents_first(args.leafs_first);
     walker = walker.follow_links(args.link_traversal);
     walker = walker.min_depth(if args.add_current_folder { 0 } else { 1 });
@@ -44,6 +44,6 @@ fn normalize2(args: &Args, item: &DirEntry) -> String {
     // let path = fs::canonicalize(item.path()).unwrap();
 
     let path = normalize(item.path().display());
-    let (_, path) = path.split_at(args.start_path_trim);
+    let (_, path) = path.split_at(args.start_prefix_len);
     String::from( if path.len() <= 1 {"."} else {path} )
 }

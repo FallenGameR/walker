@@ -9,11 +9,11 @@ use crate::utils::normalize;
 pub struct Args {
     /// Start path from where to walk
     #[clap(skip)]
-    pub start_path: PathBuf,
+    pub start_dir: PathBuf,
 
     /// How many characters to trim from the result paths
     #[clap(skip)]
-    pub start_path_trim: usize,
+    pub start_prefix_len: usize,
 
     /// Add files to the output (cdf / codef)
     #[arg(short = 'f', long, value_name = "true|false")]
@@ -53,7 +53,7 @@ pub struct Args {
 
     /// ** Path to start from (current folder by default)
     #[arg(short, long)]
-    pub path: Option<PathBuf>,
+    pub path: Option<String>,
 
     /// ** Regular expression that file names need to match
     #[arg(short, long)]
@@ -61,28 +61,56 @@ pub struct Args {
 
     /// ** List of injected entries (favorites)
     #[arg(short, long)]
-    pub injected: Vec<PathBuf>,
+    pub injected: Vec<String>,
 
     /// ** List of excluded entry names
     #[arg(short, long)]
-    pub excluded: Vec<PathBuf>,
+    pub excluded: Vec<String>,
 }
 
 impl Args {
+    // Resolve start path and make sure it is valid:
+    // - is a folder
+    // - needs to use correct /\
+    // - needs not to have trailing /
+    fn resolve_start_dir(path: Option<PathBuf>) -> PathBuf {
+        // Resolve initial value
+        let path = match path {
+            Some(path) => path,
+            None => std::env::current_dir().unwrap(),
+        };
+
+        // Make sure is is a folder
+        let meta = match path.metadata() {
+            Ok(meta) => meta,
+            Err(err) => panic!("ERR: could not get file or directory metadata for {}, error is {}", path.display(), err),
+        };
+
+        if !meta.is_dir() {
+            panic!("ERR: path needs be a dirrectory not {}", path.display());
+        }
+
+        //
+
+        path
+    }
+
     pub fn new() -> Args {
         let mut args = Args::parse();
         let current_dir = std::env::current_dir().unwrap();
-        args.start_path = args.path.to_owned().unwrap_or(current_dir);
+        args.start_dir = args.path.to_owned().unwrap_or(current_dir);
 
         // Accounting for / and \ difference
         // We want output paths to start with / and . path rendered as well
-        let start_path_rendered = normalize(args.start_path.display());
-        args.start_path_trim = start_path_rendered.len();
+        let start_dir_rendered = normalize(args.start_dir.display());
+        args.start_prefix_len = start_dir_rendered.len();
 
-        if start_path_rendered.ends_with("/") {
-            args.start_path_trim -= 1;
+        if start_dir_rendered.ends_with("/") {
+            args.start_prefix_len -= 1;
         }
 
         args
     }
+
+
 }
