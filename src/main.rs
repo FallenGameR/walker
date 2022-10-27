@@ -18,7 +18,7 @@ fn main() {
     {
         let path = match dir_entry {
             Err(error) => {
-                if args.debug {
+                if args.verbose {
                     eprintln!("ERR: {:?}", error);
                 }
                 continue;
@@ -32,8 +32,8 @@ fn main() {
 
 fn setup_walker(args: &Args) -> WalkDir {
     let mut walker = WalkDir::new(&args.start_dir);
-    walker = walker.contents_first(args.leafs_first);
-    walker = walker.follow_links(args.link_traversal);
+    walker = walker.contents_first(args.breadth_first_search);
+    walker = walker.follow_links(args.traverse_links);
     // this is broken for root paths like d:\
     // for these paths we need to add min depth of 1 in order to start enumeration
     // and explicitly add d:\ as the output folder
@@ -48,7 +48,7 @@ fn trim(args: &Args, item: &DirEntry) -> String {
     // add . before / - otherwise it looks like a absolute path in unix
     let path = normalize(item.path().display());
 
-    if args.absolute {
+    if args.absolute_paths {
         return path
     }
 

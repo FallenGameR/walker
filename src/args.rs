@@ -7,73 +7,56 @@ use crate::utils::normalize;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// Start path from where to walk
+    /// Start directory from where the walk started
     #[clap(skip)]
     pub start_dir: PathBuf,
 
-    /// How many characters to trim from the result paths
+    /// How many characters to trim from the output paths
     #[clap(skip)]
     pub start_prefix_len: usize,
 
-    /// If start path is the root of a drive
-    #[clap(skip)]
-    pub start_is_drive_root: bool,
-
-    /// Add files to the output (cdf / codef)
-    #[arg(short = 'f', long, value_name = "true|false")]
-    pub add_files: bool,
-
-    /// ? Add the current folder to the output
-    #[arg(short = 'c', long)]
-    pub add_current_folder: bool,
-
-    /// ** Add entries that start with dot to the output (hidden on unix systems)
-    #[arg(short = '.', long, value_name = "dots")]
-    pub add_dots: bool,
-
-    /// ** Add entries with hidden NTFS attribute to the output (hidden on windows systems)
-    #[arg(short = 'w', long, value_name = "hidden")]
-    pub add_hidden: bool,
-
-    /// ** List the most deep entries first
-    #[arg(short = 'l', long, value_name = "leaf")]
-    pub leafs_first: bool,
-
-    /// ** Traverse symbolic links
-    #[arg(short = 't', long, value_name = "link")]
-    pub link_traversal: bool,
-
-    /// Use absolute paths, don't trim the output
-    #[arg(short, long)]
-    pub absolute: bool,
-
-    /// ** Verbose output for debugging
-    #[arg(short, long)]
-    pub verbose: bool,
-
-    /// ** Turn debugging information on
-    #[arg(long)]
-    pub debug: bool,
-
-    /// ** Maximum depth of traversal, unlimited by default
-    #[arg(short, long)]
-    pub depth: Option<usize>,
-
     /// ** Path to start from (current folder by default)
-    #[arg(short, long)]
     pub path: Option<String>,
-
-    /// ** Regular expression that file names need to match
-    #[arg(short, long)]
-    pub regex: Option<String>,
 
     /// ** List of injected entries (favorites)
     #[arg(short, long)]
     pub injected: Vec<String>,
 
-    /// ** List of excluded entry names
+    /// ** List of excluded entries (just the name, it can match any part of the path)
     #[arg(short, long)]
     pub excluded: Vec<String>,
+
+    /// ** Maximum depth of traversal, unlimited by default, starts with 1
+    #[arg(short, long)]
+    pub depth: Option<usize>,
+
+    /// ** Traverse directory symbolic links
+    #[arg(short = 'l', long)]
+    pub traverse_links: bool,
+
+    /// ** Exclude files from the output (cdf / codef)
+    #[arg(short = 'f', long)]
+    pub hide_files: bool,
+
+    /// ** Add entries that start with dot (hidden on unix systems)
+    #[arg(short = 'D', long)]
+    pub show_dots: bool,
+
+    /// ** Add entries with hidden NTFS attribute  (hidden on windows systems)
+    #[arg(short = 'H', long)]
+    pub show_hidden: bool,
+
+    /// ** List the most deep entries first
+    #[arg(short = 'b', long)]
+    pub breadth_first_search: bool,
+
+    /// ** Use absolute paths, don't trim the output
+    #[arg(short, long)]
+    pub absolute_paths: bool,
+
+    /// ** Verbose output for debugging
+    #[arg(short, long)]
+    pub verbose: bool,
 }
 
 impl Args {
@@ -116,7 +99,6 @@ impl Args {
         let mut args = Args::parse();
         args.start_dir = Self::resolve_start_dir(&args.path);
         args.start_prefix_len = normalize(args.start_dir.display()).len();
-        args.start_is_drive_root = args.start_dir.parent().is_none();
         args
     }
 }

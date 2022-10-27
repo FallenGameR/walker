@@ -2,38 +2,62 @@ use crate::args::Args;
 use std::{fs, os::windows::prelude::*};
 use walkdir::DirEntry;
 
-// The debug version
-//#[cfg(feature = "my_debug")]
-macro_rules! debug_print {
-    ($( $args:expr ),*) => { eprintln!( $( $args ),* ); }
+//std::path::MAIN_SEPARATOR.
+
+/*
+use std::{env, fs};
+
+fn main() -> Result<()> {
+    let current_dir = env::current_dir()?;
+    println!(
+        "Entries modified in the last 24 hours in {:?}:",
+        current_dir
+    );
+
+    for entry in fs::read_dir(current_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        let metadata = fs::metadata(&path)?;
+        let last_modified = metadata.modified()?.elapsed()?.as_secs();
+
+        if last_modified < 24 * 3600 && metadata.is_file() {
+            println!(
+                "Last modified: {:?} seconds, is read only: {:?}, size: {:?} bytes, filename: {:?}",
+                last_modified,
+                metadata.permissions().readonly(),
+                metadata.len(),
+                path.file_name().ok_or("No filename")?
+            );
+        }
+    }
+
+    Ok(())
 }
 
-// Non-debug version
-//#[cfg(not(feature = "my_debug"))]
-//macro_rules! debug_print {
-//    ($( $args:expr ),*) => {}
-//}
-
-fn main() {
-    debug_print!("Debug only {}", 123);
-}
-
+https://doc.rust-lang.org/std/fs/#
+https://doc.rust-lang.org/std/fs/fn.read_dir.html
+https://doc.rust-lang.org/std/fs/struct.DirEntry.html - metadata is cheap to call, reads from buffer that is populated with lots of entries in the same folder
+https://docs.rs/jwalk/latest/jwalk/ - test if parrallelizm is a thing
+https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTypeExt.html is_symlink_dir
+https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_attributes
+*/
 pub fn accept_path(args: &Args, item: &DirEntry) -> bool {
-    if !args.add_files && is_file(item) {
+    if !args.hide_files && is_file(item) {
         if args.verbose {
             eprintln!("dbg> {} - not accepted, is_file", item.path().display());
         }
         return false;
     }
 
-    if !args.add_dots && is_dot(item) {
+    if !args.show_dots && is_dot(item) {
         if args.verbose {
             eprintln!("dbg> {} - not accepted, is_dot", item.path().display());
         }
         return false;
     }
 
-    if !args.add_hidden && is_hidden(item) {
+    if !args.show_hidden && is_hidden(item) {
         if args.verbose {
             eprintln!("dbg> {} - not accepted, is_hidden", item.path().display());
         }
