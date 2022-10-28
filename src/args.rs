@@ -23,7 +23,7 @@ pub struct Args {
 
     /// ** Maximum depth of traversal, unlimited by default, starts with 1
     #[arg(short, long)]
-    pub depth: Option<usize>,
+    pub max_depth: Option<usize>,
 
     /// ** Traverse directory symbolic links
     #[arg(short = 'l', long)]
@@ -32,6 +32,10 @@ pub struct Args {
     /// ** Exclude files from the output (cdf / codef)
     #[arg(short = 'f', long)]
     pub hide_files: bool,
+
+    /// ** Exclude directories from the output (cdf / codef)
+    #[arg(short = 'd', long)]
+    pub hide_directories: bool,
 
     /// ** Add entries that start with dot (hidden on unix systems)
     #[arg(short = 'D', long)]
@@ -42,8 +46,8 @@ pub struct Args {
     pub show_hidden: bool,
 
     /// ** List the most deep entries first
-    #[arg(short = 'b', long)]
-    pub breadth_first_search: bool,
+    #[arg(long)]
+    pub deapth_first_search: bool,
 
     /// ** Use absolute paths, don't trim the output
     #[arg(short, long)]
@@ -91,7 +95,6 @@ impl Args {
     pub fn new() -> Args {
         let mut args = Args::parse();
         args.start_dir = Self::resolve_start_dir(&args.path);
-        args.start_prefix_len = normalize(args.start_dir.display()).len();
         args
     }
 }
