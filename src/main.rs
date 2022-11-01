@@ -102,15 +102,20 @@ fn main(){
 }
 
 fn trim(args: &Args, item: &Node) -> String {
-    // add . before / - otherwise it looks like a absolute path in unix
     let path = normalize(item.path.display());
 
     if args.absolute_paths {
         return path
     }
 
-    let path = ".\\".to_owned() + path.split_at(args.start_dir.len()).1;
-    path
+    // use .\ prefix, otherwise it will look like /usr - absolute path in unix
+    let removed = args.start_dir.len();
+    let remaining = path.len() - removed;
+    let mut result = String::with_capacity(2 + remaining);
+    result.push('.');
+    result.push(std::path::MAIN_SEPARATOR);
+    result.push_str(path.split_at(removed).1);
+    result
 }
 
 // tests
