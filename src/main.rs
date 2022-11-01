@@ -32,23 +32,15 @@ https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTypeExt.html is_sym
 https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_attributes
 */
 
-fn main() -> Result<()> {
-    let args = Args::new();
+fn walk(args: &Args, root: &Node) {
 
-    let depth = 0;
-
-    let path = PathBuf::from(&args.start_dir);
-    let meta = fs::metadata(&path)?;
-    let root = Node{ path: path, depth: 0, metadata: meta };
-
-
-    let iterator = match fs::read_dir(&args.start_dir) {
+    let iterator = match fs::read_dir(&root.path) {
         Ok(iterator) => iterator,
         Err(error) => {
             if args.verbose {
                 eprintln!("ERR: failed to read directory {}, error {:?}", &args.start_dir, error);
             }
-            return Ok(());
+            return;
         }
     };
 
@@ -68,41 +60,43 @@ fn main() -> Result<()> {
             Ok(meta) => meta,
             Err(error) => {
                 if args.verbose {
-                    eprintln!("ERR: failed to read medata for file system entry, error {:?}", error);
+                    eprintln!("ERR: failed to read metadata for file system entry, error {:?}", error);
                 }
                 continue;
             }
         };
 
-        let node = Node{ path: entry.path(), depth: depth + 1, metadata: meta };
+        let node = Node{ path: entry.path(), depth: root.depth + 1, metadata: meta };
 
-        println!("{:?}", node);
+        if args.verbose {
+            println!("{:?}", node);
+        }
+        else{
+            println!("{}", node.path.display());
+        }
+
+        // Make sure it works for OneDrive folders
+        if node.metadata.is_dir() {
+            walk(args, &node);
+        }
     }
+}
 
-    Ok(())
-
-    /*
-    let walker = setup_walker(&args);
-
-    // Walk the dirs from the start path
-    for dir_entry in walker
-        .into_iter()
-        .filter_entry(|item| accept::accept_path(&args, item))
+fn main(){
+    let args = Args::new();
+    let path = PathBuf::from(&args.start_dir);
+    let meta = match fs::metadata(&path)
     {
-        let path = match dir_entry {
-            Err(error) => {
-                if args.verbose {
-                    eprintln!("ERR: {:?}", error);
-                }
-                continue;
+        Ok(meta) => {
+            let root = Node{ path: path, depth: 0, metadata: meta };
+            walk(&args, &root);
+        },
+        Err(error) => {
+            if args.verbose {
+                eprintln!("ERR: failed to read metadata for start path {:?}, error {:?}", &path, error);
             }
-            Ok(entry) => trim(&args, &entry),
-        };
-
-        println!("{}", path);
-    }
-
-    */
+        }
+    };
 }
 
 fn trim(args: &Args, item: &DirEntry) -> String {
