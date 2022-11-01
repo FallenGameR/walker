@@ -1,12 +1,8 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
-mod accept;
 mod args;
-mod utils;
 
 use std::{path::PathBuf, fs, os::windows::prelude::MetadataExt};
 use args::Args;
-use utils::normalize;
-use walkdir::{WalkDir, DirEntry};
 use anyhow::Result;
 
 #[derive(Debug)]
@@ -122,3 +118,71 @@ fn trim(args: &Args, item: &Node) -> String {
 // OneDriveFolder
 // Drive root
 // regular folder
+
+pub fn normalize(path: std::path::Display) -> String {
+    let path = path.to_string();
+    let path = path.chars().map(|c| match c {
+        '/' => std::path::MAIN_SEPARATOR,
+        _ => c,
+    });
+    path.collect()
+}
+
+
+pub fn accept_path(args: &Args, node: &Node) -> bool {
+    if !args.hide_files && is_file(node) {
+        if args.verbose {
+            eprintln!("dbg> {} - not accepted, is_file", node.path.display());
+        }
+        return false;
+    }
+
+    if !args.show_dots && is_dot(node) {
+        if args.verbose {
+            eprintln!("dbg> {} - not accepted, is_dot", node.path.display());
+        }
+        return false;
+    }
+
+    if !args.show_hidden && is_hidden(node) {
+        if args.verbose {
+            eprintln!("dbg> {} - not accepted, is_hidden", node.path.display());
+        }
+        return false;
+    }
+
+    if args.verbose {
+        eprintln!("dbg> {} - accepted", node.path.display());
+    }
+    true
+}
+
+fn is_file(node: &Node) -> bool {
+    node.metadata.is_file()
+}
+
+fn is_dot(node: &Node) -> bool {
+    node.path.file_name().map_or(false, |s| s.to_string_lossy().starts_with("."))
+}
+
+fn is_hidden(node: &Node) -> bool {
+    //println!("TEST {}", item.path().display());
+    let meta = &node.metadata;
+
+    //println!("META {}", meta.file_attributes());
+    let attributes = meta.file_attributes();
+    let hidden = (attributes & 0x2) != 0;
+    let system = (attributes & 0x4) != 0;
+    let directory = (attributes & 0x16) != 0;
+
+    if hidden {
+        // Drive roots have hidden flag set but we need to list them regardless.
+        if hidden && system && directory && node.path.parent().is_none() {
+            return false
+        }
+        return true;
+    }
+
+    //println!("META no");
+    false
+}

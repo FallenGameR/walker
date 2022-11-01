@@ -8,5 +8,4 @@ authors = ["FallenGameR"]
 
 [dependencies]
 clap = { version = "4", features = ["derive","env"] }
-walkdir = "2"
 anyhow = "1.0"

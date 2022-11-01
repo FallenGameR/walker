@@ -1,6 +1,7 @@
 use clap::Parser;
 use std::path::PathBuf;
-use crate::utils::normalize;
+
+use crate::normalize;
 
 /// Fast folder walker to be used as replacement for the default fzf walker
 #[derive(Parser, Debug)]
@@ -49,11 +50,11 @@ pub struct Args {
     #[arg(long)]
     pub deapth_first_search: bool,
 
-    /// ** Use absolute paths, don't trim the output
+    /// Use absolute paths, don't trim the output
     #[arg(short, long)]
     pub absolute_paths: bool,
 
-    /// ** Verbose output for debugging
+    /// Verbose output for debugging
     #[arg(short, long)]
     pub verbose: bool,
 }
