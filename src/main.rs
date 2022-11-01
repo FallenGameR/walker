@@ -38,7 +38,7 @@ fn walk(args: &Args, root: &Node) {
         Ok(iterator) => iterator,
         Err(error) => {
             if args.verbose {
-                eprintln!("ERR: failed to read directory {}, error {:?}", &args.start_dir, error);
+                eprintln!("ERR: failed to read directory {}, error {:?}", &root.path.display(), error);
             }
             return;
         }
@@ -72,7 +72,8 @@ fn walk(args: &Args, root: &Node) {
             println!("{:?}", node);
         }
         else{
-            println!("{}", node.path.display());
+            let path = trim(&args, &node);
+            println!("{}", path);
         }
 
         // Make sure it works for OneDrive folders
@@ -85,7 +86,8 @@ fn walk(args: &Args, root: &Node) {
 fn main(){
     let args = Args::new();
     let path = PathBuf::from(&args.start_dir);
-    let meta = match fs::metadata(&path)
+
+    match fs::metadata(&path)
     {
         Ok(meta) => {
             let root = Node{ path: path, depth: 0, metadata: meta };
@@ -99,9 +101,9 @@ fn main(){
     };
 }
 
-fn trim(args: &Args, item: &DirEntry) -> String {
+fn trim(args: &Args, item: &Node) -> String {
     // add . before / - otherwise it looks like a absolute path in unix
-    let path = normalize(item.path().display());
+    let path = normalize(item.path.display());
 
     if args.absolute_paths {
         return path
