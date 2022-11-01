@@ -109,6 +109,11 @@ fn trim(args: &Args, item: &Node) -> String {
         return path
     }
 
-    let path = "./".to_owned() + path.split_at(args.start_dir.len()).1;
+    let path = ".\\".to_owned() + path.split_at(args.start_dir.len()).1;
     path
 }
+
+// tests
+// OneDriveFolder
+// Drive root
+// regular folder

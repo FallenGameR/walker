@@ -10,7 +10,7 @@ pub struct Args {
     #[clap(skip)]
     pub start_dir: String,
 
-    /// ** Path to start from (current folder by default)
+    /// Path to start from (current folder by default)
     pub path: Option<String>,
 
     /// ** List of injected entries (favorites)
