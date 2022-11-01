@@ -1,9 +1,9 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod args;
-
 use std::{path::PathBuf, fs, os::windows::prelude::MetadataExt};
 use args::Args;
-use anyhow::Result;
+use walkdir;
+//use anyhow::Result;
 
 #[derive(Debug)]
 pub struct Node {
@@ -17,6 +17,23 @@ pub struct Node {
     /// hidden attributes and OneDrive folders since they are reported as reparse points.
     /// Standart rust library is not very helpful here, see https://github.com/rust-lang/rust/issues/46484
     metadata: fs::Metadata,
+}
+
+impl Node {
+    fn is_file(&self) -> bool {
+        self.metadata.is_file()
+    }
+
+    /// Returns true if and only if this entry points to a directory.
+    ///
+    /// This works around a bug in Rust's standard library:
+    /// https://github.com/rust-lang/rust/issues/46484
+    fn is_directory(&self) -> bool {
+        //use std::os::windows::fs::MetadataExt;
+        use winapi::um::winnt::FILE_ATTRIBUTE_DIRECTORY;
+        self.metadata.file_attributes() & FILE_ATTRIBUTE_DIRECTORY != 0
+        //self.metadata.is_dir()
+    }
 }
 
 /*
@@ -63,24 +80,52 @@ fn walk(args: &Args, root: &Node) {
         };
 
         let node = Node{ path: entry.path(), depth: root.depth + 1, metadata: meta };
+        render(&args, &node);
 
-        if args.verbose {
-            println!("{:?}", node);
-        }
-        else{
-            let path = trim(&args, &node);
-            println!("{}", path);
-        }
-
-        // Make sure it works for OneDrive folders
         if node.metadata.is_dir() {
-            walk(args, &node);
+            walk(&args, &node);
         }
     }
 }
 
+fn render(args: &Args, node: &Node) {
+    // The path to output
+    let path = trim(&args, &node);
+
+    // Hide files
+    if args.hide_files && node.is_file() {
+        if args.verbose {
+            println!("Hiding {path} file because arguments say to hide files | {node:?}");
+        }
+        return;
+    }
+
+    // Hide folders
+    if args.hide_directories && node.is_directory() {
+        if args.verbose {
+            println!("Hiding {path} directory because arguments say to hide directories | {node:?}");
+        }
+        return;
+    }
+
+    // Show node
+    if args.verbose {
+        println!("{path} | {node:?}");
+    }
+    else{
+        println!("{path}");
+    }
+}
+
+
 fn main(){
     let args = Args::new();
+
+    if args.hide_files && args.hide_directories {
+        eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories");
+        return;
+    }
+
     let path = PathBuf::from(&args.start_dir);
 
     match fs::metadata(&path)

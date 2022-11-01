@@ -30,11 +30,11 @@ pub struct Args {
     #[arg(short = 'l', long)]
     pub traverse_links: bool,
 
-    /// ** Exclude files from the output (cdf / codef)
+    /// Exclude files from the output (cdf / codef)
     #[arg(short = 'f', long)]
     pub hide_files: bool,
 
-    /// ** Exclude directories from the output (cdf / codef)
+    /// Exclude directories from the output (cdf / codef)
     #[arg(short = 'd', long)]
     pub hide_directories: bool,
 
