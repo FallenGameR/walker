@@ -3,6 +3,7 @@ mod args;
 use std::{path::PathBuf, fs, os::windows::prelude::MetadataExt};
 use args::Args;
 use walkdir;
+use winapi::um::winnt;
 //use anyhow::Result;
 
 #[derive(Debug)]
@@ -29,9 +30,7 @@ impl Node {
     /// This works around a bug in Rust's standard library:
     /// https://github.com/rust-lang/rust/issues/46484
     fn is_directory(&self) -> bool {
-        //use std::os::windows::fs::MetadataExt;
-        use winapi::um::winnt::FILE_ATTRIBUTE_DIRECTORY;
-        self.metadata.file_attributes() & FILE_ATTRIBUTE_DIRECTORY != 0
+        self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_DIRECTORY != 0
         //self.metadata.is_dir()
     }
 }
