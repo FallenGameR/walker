@@ -1,6 +1,7 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod args;
-use std::{path::PathBuf, fs, os::windows::prelude::MetadataExt};
+use std::{path::PathBuf, fs::{self, DirEntry}, os::windows::prelude::MetadataExt};
+use anyhow::Error;
 use args::Args;
 use walkdir;
 use winapi::um::winnt;
@@ -33,9 +34,33 @@ impl Node {
         self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_DIRECTORY != 0
         //self.metadata.is_dir()
     }
-}
 
-/*
+    fn new(args: &Args, entry: Result<DirEntry,std::io::Error>, depth: usize) -> Option<Node> {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(error) => {
+                if args.verbose {
+                    eprintln!("ERR: failed to open file system entry, error {:?}", error);
+                }
+                return None;
+            }
+        };
+
+        let meta = match entry.metadata()
+        {
+            Ok(meta) => meta,
+            Err(error) => {
+                if args.verbose {
+                    eprintln!("ERR: failed to read metadata for file system entry, error {:?}", error);
+                }
+                return None;
+            }
+        };
+
+        Some(Node{ path: entry.path(), depth: depth, metadata: meta })
+    }
+}
+    /*
 https://doc.rust-lang.org/std/fs/#
 https://doc.rust-lang.org/std/fs/fn.read_dir.html
 https://doc.rust-lang.org/std/fs/struct.DirEntry.html - metadata is cheap to call, reads from buffer that is populated with lots of entries in the same folder
@@ -43,6 +68,31 @@ https://docs.rs/jwalk/latest/jwalk/ - test if parrallelizm is a thing
 https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTypeExt.html is_symlink_dir
 https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_attributes
 */
+
+fn main(){
+    let args = Args::new();
+
+    if args.hide_files && args.hide_directories {
+        eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories");
+        return;
+    }
+
+    let path = PathBuf::from(&args.start_dir);
+
+    match fs::metadata(&path)
+    {
+        Ok(meta) => {
+            let root = Node{ path: path, depth: 0, metadata: meta };
+            walk(&args, &root);
+        },
+        Err(error) => {
+            if args.verbose {
+                eprintln!("ERR: failed to read metadata for start path {:?}, error {:?}", &path, error);
+            }
+        }
+    };
+}
+
 
 fn walk(args: &Args, root: &Node) {
 
@@ -57,28 +107,11 @@ fn walk(args: &Args, root: &Node) {
     };
 
     for entry in iterator {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(error) => {
-                if args.verbose {
-                    eprintln!("ERR: failed to open file system entry, error {:?}", error);
-                }
-                continue;
-            }
+        let node = match Node::new(args, entry, root.depth + 1) {
+            Some(node) => node,
+            None => continue,
         };
 
-        let meta = match entry.metadata()
-        {
-            Ok(meta) => meta,
-            Err(error) => {
-                if args.verbose {
-                    eprintln!("ERR: failed to read metadata for file system entry, error {:?}", error);
-                }
-                continue;
-            }
-        };
-
-        let node = Node{ path: entry.path(), depth: root.depth + 1, metadata: meta };
         render(&args, &node);
 
         if node.metadata.is_dir() {
@@ -117,29 +150,6 @@ fn render(args: &Args, node: &Node) {
 }
 
 
-fn main(){
-    let args = Args::new();
-
-    if args.hide_files && args.hide_directories {
-        eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories");
-        return;
-    }
-
-    let path = PathBuf::from(&args.start_dir);
-
-    match fs::metadata(&path)
-    {
-        Ok(meta) => {
-            let root = Node{ path: path, depth: 0, metadata: meta };
-            walk(&args, &root);
-        },
-        Err(error) => {
-            if args.verbose {
-                eprintln!("ERR: failed to read metadata for start path {:?}, error {:?}", &path, error);
-            }
-        }
-    };
-}
 
 fn trim(args: &Args, item: &Node) -> String {
     let path = normalize(item.path.display());
