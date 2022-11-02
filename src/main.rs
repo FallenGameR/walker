@@ -1,9 +1,13 @@
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 mod args;
-use std::{path::PathBuf, fs::{self, DirEntry}, os::windows::prelude::MetadataExt};
-use anyhow::Error;
+use std::{
+    fs::{self, DirEntry},
+    os::windows::prelude::MetadataExt,
+    path::PathBuf,
+};
+//use anyhow::Error;
 use args::Args;
-use walkdir;
+//use walkdir;
 use winapi::um::winnt;
 //use anyhow::Result;
 
@@ -35,7 +39,7 @@ impl Node {
         //self.metadata.is_dir()
     }
 
-    fn new(args: &Args, entry: Result<DirEntry,std::io::Error>, depth: usize) -> Option<Node> {
+    fn new(args: &Args, entry: Result<DirEntry, std::io::Error>, depth: usize) -> Option<Node> {
         let entry = match entry {
             Ok(entry) => entry,
             Err(error) => {
@@ -46,21 +50,60 @@ impl Node {
             }
         };
 
-        let meta = match entry.metadata()
-        {
+        let meta = match entry.metadata() {
             Ok(meta) => meta,
             Err(error) => {
                 if args.verbose {
-                    eprintln!("ERR: failed to read metadata for file system entry, error {:?}", error);
+                    eprintln!(
+                        "ERR: failed to read metadata for file system entry, error {:?}",
+                        error
+                    );
                 }
                 return None;
             }
         };
 
-        Some(Node{ path: entry.path(), depth: depth, metadata: meta })
+        Some(Node {
+            path: entry.path(),
+            depth: depth,
+            metadata: meta,
+        })
+    }
+
+    fn new_injected(args: &Args, path: &str) -> Option<Node> {
+        let path = PathBuf::from(path);
+        if !path.exists() {
+            if args.verbose {
+                eprintln!(
+                    "ERR: skipping injected path {} since it does not exist",
+                    path.display()
+                );
+            }
+            return None;
+        }
+
+        let meta = match fs::metadata(&path) {
+            Ok(meta) => meta,
+            Err(error) => {
+                if args.verbose {
+                    eprintln!(
+                        "ERR: failed to read metadata for injected path {}, error {:?}",
+                        path.display(),
+                        error
+                    );
+                }
+                return None;
+            }
+        };
+
+        Some(Node {
+            path: path,
+            depth: 0,
+            metadata: meta,
+        })
     }
 }
-    /*
+/*
 https://doc.rust-lang.org/std/fs/#
 https://doc.rust-lang.org/std/fs/fn.read_dir.html
 https://doc.rust-lang.org/std/fs/struct.DirEntry.html - metadata is cheap to call, reads from buffer that is populated with lots of entries in the same folder
@@ -69,38 +112,63 @@ https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTypeExt.html is_sym
 https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_attributes
 */
 
-fn main(){
+fn main() {
     let args = Args::new();
 
-    if args.hide_files && args.hide_directories {
-        eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories");
+    // Arguments sanity check
+    if args.hide_files && args.hide_directories && (args.injected.len() == 0) {
+        eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories and nothing is injected");
         return;
     }
 
+    // Injections are inserted here
+    for path in &args.injected {
+        let node = match Node::new_injected(&args, &path) {
+            Some(node) => node,
+            None => continue,
+        };
+        let path = node.path.display();
+
+        if args.verbose {
+            println!("{path} | {node:?}");
+        } else {
+            println!("{path}");
+        }
+    }
+
+    // Start walking from the start directory
     let path = PathBuf::from(&args.start_dir);
 
-    match fs::metadata(&path)
-    {
+    match fs::metadata(&path) {
         Ok(meta) => {
-            let root = Node{ path: path, depth: 0, metadata: meta };
+            let root = Node {
+                path: path,
+                depth: 0,
+                metadata: meta,
+            };
             walk(&args, &root);
-        },
+        }
         Err(error) => {
             if args.verbose {
-                eprintln!("ERR: failed to read metadata for start path {:?}, error {:?}", &path, error);
+                eprintln!(
+                    "ERR: failed to read metadata for start path {:?}, error {:?}",
+                    &path, error
+                );
             }
         }
     };
 }
 
-
 fn walk(args: &Args, root: &Node) {
-
     let iterator = match fs::read_dir(&root.path) {
         Ok(iterator) => iterator,
         Err(error) => {
             if args.verbose {
-                eprintln!("ERR: failed to read directory {}, error {:?}", &root.path.display(), error);
+                eprintln!(
+                    "ERR: failed to read directory {}, error {:?}",
+                    &root.path.display(),
+                    error
+                );
             }
             return;
         }
@@ -135,7 +203,9 @@ fn render(args: &Args, node: &Node) {
     // Hide folders
     if args.hide_directories && node.is_directory() {
         if args.verbose {
-            println!("Hiding {path} directory because arguments say to hide directories | {node:?}");
+            println!(
+                "Hiding {path} directory because arguments say to hide directories | {node:?}"
+            );
         }
         return;
     }
@@ -143,19 +213,16 @@ fn render(args: &Args, node: &Node) {
     // Show node
     if args.verbose {
         println!("{path} | {node:?}");
-    }
-    else{
+    } else {
         println!("{path}");
     }
 }
-
-
 
 fn trim(args: &Args, item: &Node) -> String {
     let path = normalize(item.path.display());
 
     if args.absolute_paths {
-        return path
+        return path;
     }
 
     // use .\ prefix, otherwise it will look like /usr - absolute path in unix
@@ -181,7 +248,6 @@ pub fn normalize(path: std::path::Display) -> String {
     });
     path.collect()
 }
-
 
 pub fn accept_path(args: &Args, node: &Node) -> bool {
     if !args.hide_files && is_file(node) {
@@ -216,7 +282,9 @@ fn is_file(node: &Node) -> bool {
 }
 
 fn is_dot(node: &Node) -> bool {
-    node.path.file_name().map_or(false, |s| s.to_string_lossy().starts_with("."))
+    node.path
+        .file_name()
+        .map_or(false, |s| s.to_string_lossy().starts_with("."))
 }
 
 fn is_hidden(node: &Node) -> bool {
@@ -232,7 +300,7 @@ fn is_hidden(node: &Node) -> bool {
     if hidden {
         // Drive roots have hidden flag set but we need to list them regardless.
         if hidden && system && directory && node.path.parent().is_none() {
-            return false
+            return false;
         }
         return true;
     }

@@ -48,7 +48,7 @@ pub struct Args {
 
     /// ** List the most deep entries first
     #[arg(long)]
-    pub deapth_first_search: bool,
+    pub depth_first_search: bool,
 
     /// Use absolute paths, don't trim the output
     #[arg(short, long)]
