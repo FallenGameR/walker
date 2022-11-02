@@ -16,6 +16,7 @@ pub struct Args {
 
     /// ** List of injected entries (favorites)
     #[arg(short, long)]
+    //multiple_values = true, value_delimiter = ':'
     pub injected: Vec<String>,
 
     /// ** List of excluded entries (just the name, it can match any part of the path)
