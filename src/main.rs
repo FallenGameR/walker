@@ -115,6 +115,10 @@ https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_a
 fn main() {
     let args = Args::new();
 
+    println!("{:?}", args);
+
+    return;
+/*
     // Arguments sanity check
     if args.hide_files && args.hide_directories && (args.injected.len() == 0) {
         eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories and nothing is injected");
@@ -157,6 +161,7 @@ fn main() {
             }
         }
     };
+ */
 }
 
 fn walk(args: &Args, root: &Node) {
