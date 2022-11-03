@@ -27,22 +27,13 @@ Options:
 ```
 
 ```ps1
+# injections work
+cargo run -- "." -fd -i ".\.git\" -i ".\.gitignore" 
 
-$a = @(
-    ".",
-    "--injected",
-    ".\.git\",
-    ".\.gitignore"
-)
+cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/" -e "TestResults"
+cargo run -- "d:\" -d1 -c
 
-.\target\debug\walker.exe @a
-
-cargo run -- "C:/Users/alexko/Downloads"
-cargo run -- -p "." -fd --injected ".\.git\" ".\.gitignore" # how to specify vector of arguments?
-cargo run -- -p "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/"
-cargo run -- -p "d:\" -d1 -c
-
-# WTF here
+# WTF here (old walkdir implementation)
 cargo run -- -p "C:/" -vd1
 cargo run -- -p "C:/" -wvd1
 ```

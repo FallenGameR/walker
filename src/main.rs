@@ -115,10 +115,6 @@ https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_a
 fn main() {
     let args = Args::new();
 
-    println!("{:?}", args);
-
-    return;
-/*
     // Arguments sanity check
     if args.hide_files && args.hide_directories && (args.injected.len() == 0) {
         eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories and nothing is injected");
@@ -161,7 +157,6 @@ fn main() {
             }
         }
     };
- */
 }
 
 fn walk(args: &Args, root: &Node) {
@@ -180,10 +175,14 @@ fn walk(args: &Args, root: &Node) {
     };
 
     for entry in iterator {
-        let node = match Node::new(args, entry, root.depth + 1) {
+        let node = match Node::new(&args, entry, &root.depth + 1) {
             Some(node) => node,
             None => continue,
         };
+
+        if exclude(&args, &node) {
+            continue;
+        }
 
         render(&args, &node);
 
@@ -191,6 +190,21 @@ fn walk(args: &Args, root: &Node) {
             walk(&args, &node);
         }
     }
+}
+
+fn exclude(args: &Args, node: &Node) -> bool {
+    let file_entry_name = match node.path.file_name() {
+        Some(name) => name,
+        None => return false,
+    };
+
+    for excluded in &args.excluded {
+        if file_entry_name == excluded.as_str() {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn render(args: &Args, node: &Node) {

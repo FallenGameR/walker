@@ -14,11 +14,11 @@ pub struct Args {
     /// Path to start from (current folder by default)
     pub path: Option<String>,
 
-    /// ** List of injected entries (favorites)
+    /// List of injected entries (favorites)
     #[arg(short, long)]
     pub injected: Vec<String>,
 
-    /// ** List of excluded entries (just the name, it can match any part of the path)
+    /// List of excluded entries (just the name, it can match any part of the path)
     #[arg(short, long)]
     pub excluded: Vec<String>,
 

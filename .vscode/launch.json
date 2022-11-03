@@ -21,8 +21,9 @@
                 }
             },
             "args": [
-                "--injected",
+                "-i",
                 ".\\.git\\",
+                "-i",
                 ".\\.gitignore"
             ],
             "cwd": "${workspaceFolder}"
