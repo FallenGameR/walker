@@ -1,11 +1,8 @@
 mod args;
 mod node;
-use std::{
-    fs,
-    path::PathBuf,
-};
 use args::Args;
 use node::Node;
+use std::{fs, path::PathBuf};
 //use anyhow::Error;
 //use walkdir;
 //use anyhow::Result;
@@ -21,18 +18,17 @@ fn main() {
     let args = Args::new();
 
     // Arguments sanity check
-    if args.hide_files && args.hide_directories && (args.injected.len() == 0) {
-        eprintln!("ERR: nothing to show, arguments instruct to hide both files and directories and nothing is injected");
+    if args.hide_files && args.hide_directories && !args.show_root && (args.injected.len() == 0) {
+        eprintln!("ERR: nothing to show, arguments instruct to hide files, directories, root and nothing is injected");
         return;
     }
 
     // Injections are inserted here
-    for path in &args.injected {
-        let node = match Node::new_injected(&args, &path) {
-            Some(node) => node,
-            None => continue,
-        };
-
+    for node in args
+        .injected
+        .iter()
+        .filter_map(|path| Node::new_injected(&args, &path))
+    {
         // Don't trim and ignore -fd flags
         let path = node.path.display().to_string();
         show(&args, &node, &path);
@@ -194,9 +190,7 @@ pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
     // Hide dots (by default dots are hidden)
     if !args.show_dots && node.is_dot() {
         if args.verbose {
-            println!(
-                "Hiding {path} entry because arguments say to hide dots | {node:?}"
-            );
+            println!("Hiding {path} entry because arguments say to hide dots | {node:?}");
         }
         return false;
     }
@@ -204,9 +198,7 @@ pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
     // Hide hidden (by default hidden are hidden)
     if !args.show_hidden && node.is_hidden() {
         if args.verbose {
-            println!(
-                "Hiding {path} entry because arguments say to hide hidden | {node:?}"
-            );
+            println!("Hiding {path} entry because arguments say to hide hidden | {node:?}");
         }
         return false;
     }
