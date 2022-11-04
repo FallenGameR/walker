@@ -112,6 +112,15 @@ https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTypeExt.html is_sym
 https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_attributes
 */
 
+
+fn show(args: &Args, node: &Node, path: &str) {
+    if args.verbose {
+        println!("{path} | {node:?}");
+    } else {
+        println!("{path}");
+    }
+}
+
 fn main() {
     let args = Args::new();
 
@@ -127,14 +136,12 @@ fn main() {
             Some(node) => node,
             None => continue,
         };
-        let path = node.path.display();
 
-        if args.verbose {
-            println!("{path} | {node:?}");
-        } else {
-            println!("{path}");
-        }
+        let path = node.path.display().to_string();
+        show(&args, &node, &path);
     }
+
+    // Inject root folder here
 
     // Start walking from the start directory
     let path = PathBuf::from(&args.start_dir);
@@ -230,11 +237,7 @@ fn render(args: &Args, node: &Node) {
     }
 
     // Show node
-    if args.verbose {
-        println!("{path} | {node:?}");
-    } else {
-        println!("{path}");
-    }
+    show(&args, &node, &path);
 }
 
 fn trim(args: &Args, item: &Node) -> String {

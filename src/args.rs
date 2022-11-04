@@ -38,6 +38,10 @@ pub struct Args {
     #[arg(short = 'd', long)]
     pub hide_directories: bool,
 
+    // ** Add root folder to the output
+    #[arg(short = 'R', long)]
+    pub show_root: bool,
+
     /// ** Add entries that start with dot (hidden on unix systems)
     #[arg(short = 'D', long)]
     pub show_dots: bool,
