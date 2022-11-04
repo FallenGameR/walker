@@ -15,19 +15,19 @@ pub struct Args {
     pub path: Option<String>,
 
     /// List of injected entries (favorites)
-    #[arg(short, long)]
+    #[arg(short = 'I', long)]
     pub injected: Vec<String>,
 
     /// List of excluded entries (just the name, it can match any part of the path)
-    #[arg(short, long)]
+    #[arg(short = 'e', long)]
     pub excluded: Vec<String>,
 
     /// ** Maximum depth of traversal, unlimited by default, starts with 1
-    #[arg(short, long)]
+    #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
 
     /// ** Traverse directory symbolic links
-    #[arg(short = 'l', long)]
+    #[arg(short = 'L', long)]
     pub traverse_links: bool,
 
     /// Exclude files from the output (cdf / codef)
