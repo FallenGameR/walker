@@ -21,7 +21,7 @@ pub struct Args {
     #[arg(short = 'e', long)]
     pub excluded: Vec<String>,
 
-    /// ** Maximum depth of traversal, unlimited by default, starts with 1
+    /// Maximum depth of traversal, unlimited by default, children of root has depth 1
     #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
 
@@ -37,7 +37,7 @@ pub struct Args {
     #[arg(short = 'd', long)]
     pub hide_directories: bool,
 
-    // ** Add root folder to the output
+    // Add root folder to the output
     #[arg(short = 'R', long)]
     pub show_root: bool,
 

@@ -142,6 +142,12 @@ fn main() {
     }
 
     // Inject root folder here
+    if args.show_root {
+        if let Some(node) = Node::new_injected(&args, &args.start_dir) {
+            let path = trim(&args, &node);
+            show(&args, &node, &path);
+        };
+    }
 
     // Start walking from the start directory
     let path = PathBuf::from(&args.start_dir);
