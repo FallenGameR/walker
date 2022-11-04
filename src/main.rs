@@ -161,7 +161,10 @@ fn main() {
     };
 }
 
+/// To support breadth first approach and parrallelizm we need
+/// not to use recursion here but rather use queue/stack
 fn walk(args: &Args, root: &Node) {
+    // Limit traversal
     if root.depth >= args.max_depth.unwrap_or(usize::MAX) {
         return;
     }
@@ -181,7 +184,7 @@ fn walk(args: &Args, root: &Node) {
     };
 
     for entry in iterator {
-        //
+        // Create node to process and walk through
         let node = match Node::new(&args, entry, &root.depth + 1) {
             Some(node) => node,
             None => continue,
@@ -194,6 +197,7 @@ fn walk(args: &Args, root: &Node) {
 
         render(&args, &node);
 
+        // Traverse children
         if node.metadata.is_dir() {
             walk(&args, &node);
         }
@@ -275,36 +279,51 @@ pub fn normalize(path: std::path::Display) -> String {
     path.collect()
 }
 
-pub fn accept_path(args: &Args, node: &Node) -> bool {
-    if !args.hide_files && is_file(node) {
+pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
+    // Hide files
+    if args.hide_files && node.is_file() {
         if args.verbose {
-            eprintln!("dbg> {} - not accepted, is_file", node.path.display());
+            println!("Hiding {path} file because arguments say to hide files | {node:?}");
         }
         return false;
     }
 
+    // Hide directories
+    if args.hide_directories && node.is_directory() {
+        if args.verbose {
+            println!(
+                "Hiding {path} directory because arguments say to hide directories | {node:?}"
+            );
+        }
+        return false;
+    }
+
+    // Hide dots (by default dots are hidden)
     if !args.show_dots && is_dot(node) {
         if args.verbose {
-            eprintln!("dbg> {} - not accepted, is_dot", node.path.display());
+            println!(
+                "Hiding {path} entry because arguments say to hide dots | {node:?}"
+            );
         }
         return false;
     }
 
+    // Hide hidden (by default hidden are hidden)
     if !args.show_hidden && is_hidden(node) {
         if args.verbose {
-            eprintln!("dbg> {} - not accepted, is_hidden", node.path.display());
+            println!(
+                "Hiding {path} entry because arguments say to hide hidden | {node:?}"
+            );
         }
         return false;
     }
 
+    // Debug output
     if args.verbose {
-        eprintln!("dbg> {} - accepted", node.path.display());
+        println!("Accepted {path} | {node:?}");
     }
-    true
-}
 
-fn is_file(node: &Node) -> bool {
-    node.metadata.is_file()
+    true
 }
 
 fn is_dot(node: &Node) -> bool {
