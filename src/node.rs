@@ -1,10 +1,10 @@
+use crate::args::Args;
 use std::{
     fs::{self, DirEntry},
     os::windows::prelude::MetadataExt,
     path::PathBuf,
 };
 use winapi::um::winnt;
-use crate::args::Args;
 
 #[derive(Debug)]
 pub struct Node {
@@ -97,9 +97,12 @@ impl Node {
     }
 
     pub fn is_dot(&self) -> bool {
-        self.path
-            .file_name()
-            .map_or(false, |s| s.to_string_lossy().starts_with("."))
+        if let Some(name) = self.path.file_name() {
+            name.to_string_lossy().starts_with(".")
+        }
+        else {
+            false
+        }
     }
 
     pub fn is_hidden(&self) -> bool {

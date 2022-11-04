@@ -1,6 +1,6 @@
+use crate::normalize;
 use clap::Parser;
 use std::path::PathBuf;
-use crate::normalize;
 
 /// Fast folder walker to be used as replacement for the default fzf walker
 #[derive(Parser, Debug)]
@@ -13,13 +13,17 @@ pub struct Args {
     /// Path to start from (current folder by default)
     pub path: Option<String>,
 
-    /// List of injected entries (favorites)
+    /// List of included entries (favorites)
     #[arg(short = 'I', long)]
-    pub injected: Vec<String>,
+    pub included: Vec<String>,
 
     /// List of excluded entries (just the name, it can match any part of the path)
     #[arg(short = 'e', long)]
     pub excluded: Vec<String>,
+
+    // Include root folder to the output
+    #[arg(short = 'R', long)]
+    pub show_root: bool,
 
     /// Maximum depth of traversal, unlimited by default, children of root has depth 1
     #[arg(short = 'm', long)]
@@ -29,17 +33,13 @@ pub struct Args {
     #[arg(short = 'L', long)]
     pub traverse_links: bool,
 
-    /// Exclude files from the output (cdf / codef)
+    /// Hide files from the output (cdf / codef)
     #[arg(short = 'f', long)]
     pub hide_files: bool,
 
-    /// Exclude directories from the output (cdf / codef)
+    /// Hide directories from the output, but they are still walked (cdf / codef)
     #[arg(short = 'd', long)]
     pub hide_directories: bool,
-
-    // Add root folder to the output
-    #[arg(short = 'R', long)]
-    pub show_root: bool,
 
     /// ** Add entries that start with dot (hidden on unix systems)
     #[arg(short = 'D', long)]
@@ -82,13 +82,19 @@ impl Args {
 
         // Make sure it is a folder
         match path.metadata() {
-            Ok(meta) => if !meta.is_dir() {
-                panic!("ERR: path needs be a dirrectory but it was not: {}", path.display());
-            },
+            Ok(meta) => {
+                if !meta.is_dir() {
+                    panic!(
+                        "ERR: path needs be a dirrectory but it was not: {}",
+                        path.display()
+                    );
+                }
+            }
             Err(error) => panic!(
                 "ERR: could not get metadata for {}, error is {}",
                 path.display(),
-                error),
+                error
+            ),
         };
 
         // Make sure correct slashes are used

@@ -18,14 +18,14 @@ fn main() {
     let args = Args::new();
 
     // Arguments sanity check
-    if args.hide_files && args.hide_directories && !args.show_root && (args.injected.len() == 0) {
+    if args.hide_files && args.hide_directories && !args.show_root && (args.included.len() == 0) {
         eprintln!("ERR: nothing to show, arguments instruct to hide files, directories, root and nothing is injected");
         return;
     }
 
     // Injections are inserted here
     for node in args
-        .injected
+        .included
         .iter()
         .filter_map(|path| Node::new_injected(&args, &path))
     {
@@ -115,10 +115,38 @@ fn exclude(args: &Args, node: &Node) -> bool {
         None => return false,
     };
 
+    // Exclude files
+    if args.hide_files && node.is_file() {
+        if args.verbose {
+            println!("Excluding {} file because arguments say to hide files | {node:?}", file_entry_name.to_string_lossy());
+        }
+        return true;
+    }
+
+    // Exclude excluded
     for excluded in &args.excluded {
         if file_entry_name == excluded.as_str() {
+            if args.verbose {
+                println!("Excluding {} entry because arguments say to exclude {} | {node:?}", file_entry_name.to_string_lossy(), excluded);
+            }
             return true;
         }
+    }
+
+    // Exclude dots (by default)
+    if !args.show_dots && node.is_dot() {
+        if args.verbose {
+            println!("Excluding {} entry because arguments say to exclude dots | {node:?}", file_entry_name.to_string_lossy());
+        }
+        return true;
+    }
+
+    // Exclude hidden (by default)
+    if !args.show_hidden && node.is_hidden() {
+        if args.verbose {
+            println!("Excluding {} entry because arguments say to exclude hidden | {node:?}", file_entry_name.to_string_lossy());
+        }
+        return true;
     }
 
     false
@@ -169,36 +197,12 @@ pub fn normalize(path: std::path::Display) -> String {
 }
 
 pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
-    // Hide files
-    if args.hide_files && node.is_file() {
-        if args.verbose {
-            println!("Hiding {path} file because arguments say to hide files | {node:?}");
-        }
-        return false;
-    }
-
-    // Hide directories
+    // Hide directories, but it is still walked
     if args.hide_directories && node.is_directory() {
         if args.verbose {
             println!(
                 "Hiding {path} directory because arguments say to hide directories | {node:?}"
             );
-        }
-        return false;
-    }
-
-    // Hide dots (by default dots are hidden)
-    if !args.show_dots && node.is_dot() {
-        if args.verbose {
-            println!("Hiding {path} entry because arguments say to hide dots | {node:?}");
-        }
-        return false;
-    }
-
-    // Hide hidden (by default hidden are hidden)
-    if !args.show_hidden && node.is_hidden() {
-        if args.verbose {
-            println!("Hiding {path} entry because arguments say to hide hidden | {node:?}");
         }
         return false;
     }
