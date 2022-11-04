@@ -144,12 +144,13 @@ fn exclude(args: &Args, node: &Node) -> bool {
     false
 }
 
+/// Inline?
 fn render(args: &Args, node: &Node) {
     // The path to output
     let path = trim(&args, &node);
 
     // Show if accepted if needed
-    if accept_path(args, node, &path) {
+    if show_entry(args, node, &path) {
         show(&args, &node, &path);
     }
 }
@@ -171,14 +172,7 @@ fn trim(args: &Args, item: &Node) -> String {
     result
 }
 
-fn show(args: &Args, node: &Node, path: &str) {
-    if args.verbose {
-        println!("{path} | {node:?}");
-    } else {
-        println!("{path}");
-    }
-}
-
+/// Inline?
 pub fn normalize(path: std::path::Display) -> String {
     let path = path.to_string();
     let path = path.chars().map(|c| match c {
@@ -188,7 +182,7 @@ pub fn normalize(path: std::path::Display) -> String {
     path.collect()
 }
 
-pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
+pub fn show_entry(args: &Args, node: &Node, path: &str) -> bool {
     // Hide files
     if args.hide_files && node.is_file() {
         if args.verbose {
@@ -209,4 +203,12 @@ pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
     }
 
     true
+}
+
+fn show(args: &Args, node: &Node, path: &str) {
+    if args.verbose {
+        println!("{path} | {node:?}");
+    } else {
+        println!("{path}");
+    }
 }
