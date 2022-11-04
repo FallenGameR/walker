@@ -1,6 +1,5 @@
 use clap::Parser;
 use std::path::PathBuf;
-
 use crate::normalize;
 
 /// Fast folder walker to be used as replacement for the default fzf walker

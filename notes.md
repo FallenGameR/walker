@@ -30,7 +30,7 @@ Options:
 # injections work
 cargo run -- "." -fd -i ".\.git\" -i ".\.gitignore" 
 cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/" -e "TestResults"
-cargo run -- "d:\" -d1 -R
+cargo run -- "d:\" -m0 -Rf
 
 # WTF here (old walkdir implementation)
 cargo run -- -p "C:/" -vd1

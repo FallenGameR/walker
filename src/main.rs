@@ -167,6 +167,10 @@ fn main() {
 }
 
 fn walk(args: &Args, root: &Node) {
+    if root.depth >= args.max_depth.unwrap_or(usize::MAX) {
+        return;
+    }
+
     let iterator = match fs::read_dir(&root.path) {
         Ok(iterator) => iterator,
         Err(error) => {
