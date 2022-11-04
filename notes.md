@@ -37,3 +37,8 @@ cargo run -- "d:\" -m1 -Rfa
 cargo run -- -p "C:/" -vd1
 cargo run -- -p "C:/" -wvd1
 ```
+
+tests
+OneDriveFolder
+Drive root
+regular folder

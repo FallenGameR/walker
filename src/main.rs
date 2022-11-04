@@ -31,12 +31,10 @@ impl Node {
     }
 
     /// Returns true if and only if this entry points to a directory.
-    ///
-    /// This works around a bug in Rust's standard library:
+    /// self.metadata.is_dir() is buggy for OneDrive folders:
     /// https://github.com/rust-lang/rust/issues/46484
     fn is_directory(&self) -> bool {
         self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_DIRECTORY != 0
-        //self.metadata.is_dir()
     }
 
     fn new(args: &Args, entry: Result<DirEntry, std::io::Error>, depth: usize) -> Option<Node> {
@@ -65,7 +63,7 @@ impl Node {
 
         Some(Node {
             path: entry.path(),
-            depth: depth,
+            depth,
             metadata: meta,
         })
     }
@@ -103,23 +101,12 @@ impl Node {
         })
     }
 }
+
 /*
-https://doc.rust-lang.org/std/fs/#
-https://doc.rust-lang.org/std/fs/fn.read_dir.html
-https://doc.rust-lang.org/std/fs/struct.DirEntry.html - metadata is cheap to call, reads from buffer that is populated with lots of entries in the same folder
 https://docs.rs/jwalk/latest/jwalk/ - test if parrallelizm is a thing
 https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTypeExt.html is_symlink_dir
 https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_attributes
 */
-
-
-fn show(args: &Args, node: &Node, path: &str) {
-    if args.verbose {
-        println!("{path} | {node:?}");
-    } else {
-        println!("{path}");
-    }
-}
 
 fn main() {
     let args = Args::new();
@@ -137,13 +124,15 @@ fn main() {
             None => continue,
         };
 
+        // Don't trim and ignore -fd flags
         let path = node.path.display().to_string();
         show(&args, &node, &path);
     }
 
-    // Inject root folder here
+    // Insert start directory here
     if args.show_root {
         if let Some(node) = Node::new_injected(&args, &args.start_dir) {
+            // Trim but ignore -fd flags
             let path = trim(&args, &node);
             show(&args, &node, &path);
         };
@@ -192,11 +181,13 @@ fn walk(args: &Args, root: &Node) {
     };
 
     for entry in iterator {
+        //
         let node = match Node::new(&args, entry, &root.depth + 1) {
             Some(node) => node,
             None => continue,
         };
 
+        // Skip the entry and its descendants
         if exclude(&args, &node) {
             continue;
         }
@@ -267,10 +258,13 @@ fn trim(args: &Args, item: &Node) -> String {
     result
 }
 
-// tests
-// OneDriveFolder
-// Drive root
-// regular folder
+fn show(args: &Args, node: &Node, path: &str) {
+    if args.verbose {
+        println!("{path} | {node:?}");
+    } else {
+        println!("{path}");
+    }
+}
 
 pub fn normalize(path: std::path::Display) -> String {
     let path = path.to_string();
