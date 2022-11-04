@@ -28,7 +28,7 @@ Options:
 
 ```ps1
 # injections work
-cargo run -- "." -fd -i ".\.git\" -i ".\.gitignore" 
+cargo run -- "." -fd -I ".\.git\" -I ".\.gitignore"
 cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/" -e "TestResults"
 cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/" -e "TestResults" -e src -Ra
 cargo run -- "d:\" -m1 -Rfa
