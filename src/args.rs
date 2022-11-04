@@ -63,10 +63,16 @@ pub struct Args {
 }
 
 impl Args {
-    // Resolve start path and make sure it is valid:
-    // - is a folder
-    // - needs to use correct /\
-    // - needs not to have trailing /
+    pub fn new() -> Args {
+        let mut args = Args::parse();
+        args.start_dir = Self::resolve_start_dir(&args.path);
+        args
+    }
+
+    /// Resolve start path and make sure it is valid:
+    /// - is a folder
+    /// - needs to use correct /\
+    /// - needs not to have trailing /
     fn resolve_start_dir(path: &Option<String>) -> String {
         // Resolve initial value
         let path = match path {
@@ -94,11 +100,5 @@ impl Args {
         }
 
         path
-    }
-
-    pub fn new() -> Args {
-        let mut args = Args::parse();
-        args.start_dir = Self::resolve_start_dir(&args.path);
-        args
     }
 }
