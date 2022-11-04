@@ -112,14 +112,18 @@ fn walk(args: &Args, root: &Node) {
 fn exclude(args: &Args, node: &Node) -> bool {
     let file_entry_name = match node.path.file_name() {
         Some(name) => name,
-        None => return false,
+        None => return false, // Fact there is no file name doesn't mean we can't walk it, does it?
     };
 
     // Exclude excluded
     for excluded in &args.excluded {
         if file_entry_name == excluded.as_str() {
             if args.verbose {
-                println!("Excluding {} entry because arguments say to exclude {} | {node:?}", file_entry_name.to_string_lossy(), excluded);
+                println!(
+                    "Excluding {} entry because arguments say to exclude {} | {node:?}",
+                    file_entry_name.to_string_lossy(),
+                    excluded
+                );
             }
             return true;
         }
@@ -128,7 +132,10 @@ fn exclude(args: &Args, node: &Node) -> bool {
     // Exclude dots (by default)
     if !args.show_dots && node.is_dot() {
         if args.verbose {
-            println!("Excluding {} entry because arguments say to exclude dots | {node:?}", file_entry_name.to_string_lossy());
+            println!(
+                "Excluding {} entry because arguments say to exclude dots | {node:?}",
+                file_entry_name.to_string_lossy()
+            );
         }
         return true;
     }
@@ -136,7 +143,10 @@ fn exclude(args: &Args, node: &Node) -> bool {
     // Exclude hidden (by default)
     if !args.show_hidden && node.is_hidden() {
         if args.verbose {
-            println!("Excluding {} entry because arguments say to exclude hidden | {node:?}", file_entry_name.to_string_lossy());
+            println!(
+                "Excluding {} entry because arguments say to exclude hidden | {node:?}",
+                file_entry_name.to_string_lossy()
+            );
         }
         return true;
     }
@@ -186,9 +196,8 @@ pub fn show_entry(args: &Args, node: &Node, path: &str) -> bool {
     // Hide files
     if args.hide_files && node.is_file() {
         if args.verbose {
-            println!(
-                "Hiding {path} file because arguments say to hide files | {node:?}"
-            );        }
+            println!("Hiding {path} file because arguments say to hide files | {node:?}");
+        }
         return true;
     }
 
