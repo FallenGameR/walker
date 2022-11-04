@@ -26,17 +26,6 @@ pub struct Node {
 }
 
 impl Node {
-    fn is_file(&self) -> bool {
-        self.metadata.is_file()
-    }
-
-    /// Returns true if and only if this entry points to a directory.
-    /// self.metadata.is_dir() is buggy for OneDrive folders:
-    /// https://github.com/rust-lang/rust/issues/46484
-    fn is_directory(&self) -> bool {
-        self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_DIRECTORY != 0
-    }
-
     fn new(args: &Args, entry: Result<DirEntry, std::io::Error>, depth: usize) -> Option<Node> {
         let entry = match entry {
             Ok(entry) => entry,
@@ -99,6 +88,31 @@ impl Node {
             depth: 0,
             metadata: meta,
         })
+    }
+
+    fn is_file(&self) -> bool {
+        self.metadata.is_file()
+    }
+
+    /// Returns true if and only if this entry points to a directory.
+    /// self.metadata.is_dir() is buggy for OneDrive folders:
+    /// https://github.com/rust-lang/rust/issues/46484
+    fn is_directory(&self) -> bool {
+        self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_DIRECTORY != 0
+    }
+
+    fn is_dot(&self) -> bool {
+        self.path
+            .file_name()
+            .map_or(false, |s| s.to_string_lossy().starts_with("."))
+    }
+
+    fn is_hidden(&self) -> bool {
+        self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_HIDDEN != 0
+    }
+
+    fn is_system(&self) -> bool {
+        self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_SYSTEM != 0
     }
 }
 
@@ -223,26 +237,10 @@ fn render(args: &Args, node: &Node) {
     // The path to output
     let path = trim(&args, &node);
 
-    // Hide files
-    if args.hide_files && node.is_file() {
-        if args.verbose {
-            println!("Hiding {path} file because arguments say to hide files | {node:?}");
-        }
-        return;
+    // Show if accepted if needed
+    if accept_path(args, node, &path) {
+        show(&args, &node, &path);
     }
-
-    // Hide folders
-    if args.hide_directories && node.is_directory() {
-        if args.verbose {
-            println!(
-                "Hiding {path} directory because arguments say to hide directories | {node:?}"
-            );
-        }
-        return;
-    }
-
-    // Show node
-    show(&args, &node, &path);
 }
 
 fn trim(args: &Args, item: &Node) -> String {
@@ -299,7 +297,7 @@ pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
     }
 
     // Hide dots (by default dots are hidden)
-    if !args.show_dots && is_dot(node) {
+    if !args.show_dots && node.is_dot() {
         if args.verbose {
             println!(
                 "Hiding {path} entry because arguments say to hide dots | {node:?}"
@@ -309,7 +307,7 @@ pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
     }
 
     // Hide hidden (by default hidden are hidden)
-    if !args.show_hidden && is_hidden(node) {
+    if !args.show_hidden && node.is_hidden() {
         if args.verbose {
             println!(
                 "Hiding {path} entry because arguments say to hide hidden | {node:?}"
@@ -324,32 +322,4 @@ pub fn accept_path(args: &Args, node: &Node, path: &str) -> bool {
     }
 
     true
-}
-
-fn is_dot(node: &Node) -> bool {
-    node.path
-        .file_name()
-        .map_or(false, |s| s.to_string_lossy().starts_with("."))
-}
-
-fn is_hidden(node: &Node) -> bool {
-    //println!("TEST {}", item.path().display());
-    let meta = &node.metadata;
-
-    //println!("META {}", meta.file_attributes());
-    let attributes = meta.file_attributes();
-    let hidden = (attributes & 0x2) != 0;
-    let system = (attributes & 0x4) != 0;
-    let directory = (attributes & 0x16) != 0;
-
-    if hidden {
-        // Drive roots have hidden flag set but we need to list them regardless.
-        if hidden && system && directory && node.path.parent().is_none() {
-            return false;
-        }
-        return true;
-    }
-
-    //println!("META no");
-    false
 }
