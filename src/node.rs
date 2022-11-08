@@ -17,7 +17,7 @@ pub struct Node {
     /// File metadata that we get cheaply in Windows and it is the correct way to handle
     /// hidden attributes and OneDrive folders since they are reported as reparse points.
     /// Standart rust library is not very helpful here, see https://github.com/rust-lang/rust/issues/46484
-    pub metadata: fs::Metadata,
+    metadata: fs::Metadata,
 }
 
 impl Node {
@@ -50,6 +50,14 @@ impl Node {
             depth,
             metadata: meta,
         })
+    }
+
+    pub fn new_root(path: PathBuf, meta: fs::Metadata) -> Node {
+        Node {
+            path: path,
+            depth: 0,
+            metadata: meta,
+        }
     }
 
     pub fn new_injected(args: &Args, path: &str) -> Option<Node> {
@@ -89,6 +97,10 @@ impl Node {
         self.metadata.is_file()
     }
 
+    pub fn is_link(&self) -> bool {
+        self.metadata.is_symlink()
+    }
+
     /// Returns true if and only if this entry points to a directory.
     /// self.metadata.is_dir() is buggy for OneDrive folders:
     /// https://github.com/rust-lang/rust/issues/46484
@@ -109,7 +121,7 @@ impl Node {
         self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_HIDDEN != 0
     }
 
-    pub fn is_system(&self) -> bool {
-        self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_SYSTEM != 0
-    }
+    //pub fn is_system(&self) -> bool {
+    //    self.metadata.file_attributes() & winnt::FILE_ATTRIBUTE_SYSTEM != 0
+    //}
 }

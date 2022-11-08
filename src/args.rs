@@ -29,9 +29,9 @@ pub struct Args {
     #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
 
-    /// ** Traverse directory symbolic links
-    #[arg(short = 'L', long)]
-    pub traverse_links: bool,
+    /// Do not traverse directory symbolic links
+    #[arg(short = 'l', long)]
+    pub dont_traverse_links: bool,
 
     /// Hide files from the output (cdf / codef)
     #[arg(short = 'f', long)]
@@ -41,11 +41,11 @@ pub struct Args {
     #[arg(short = 'd', long)]
     pub hide_directories: bool,
 
-    /// ** Add entries that start with dot (hidden on unix systems)
+    /// Add entries that start with dot (hidden on unix systems)
     #[arg(short = 'D', long)]
     pub show_dots: bool,
 
-    /// ** Add entries with hidden NTFS attribute  (hidden on windows systems)
+    /// Add entries with hidden NTFS attribute  (hidden on windows systems)
     #[arg(short = 'H', long)]
     pub show_hidden: bool,
 

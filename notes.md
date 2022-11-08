@@ -35,10 +35,8 @@ cargo run -- "d:\" -m1 -Rfa
 
 cargo run -- ~\Documents\Powershell\
 cargo run -- ~\Documents\Powershell\Modules -f
+cargo run -- d:\src\mv -m1 -aHD -e ".git"
 
-# WTF here (old walkdir implementation)
-cargo run -- -p "C:/" -vd1
-cargo run -- -p "C:/" -wvd1
 ```
 
 tests
@@ -46,14 +44,5 @@ OneDriveFolder
 Drive root
 regular folder
 
-
-
-.\CoreXTAutomation | Node { 
-    path: "C:\\Users\\alexko\\Documents\\Powershell\\Modules\\CoreXTAutomation", 
-    depth: 1, 
-    metadata: Metadata { 
-        file_type: FileType(FileType { attributes: 1040, reparse_tag: 2684354563 }), 
-        is_dir: false, 
-        is_file: false, 
-        permissions: Permissions(FilePermissions { attrs: 1040 }), 
-        modified: Ok(SystemTime { intervals: 133076504840750473 }), accessed: Ok(SystemTime { intervals: 133076504840750473 }), created: Ok(SystemTime { intervals: 133076504840750473 }), .. } }
+fzf << walker << codef
+add parrallell reading and breadth-first

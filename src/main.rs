@@ -10,8 +10,6 @@ use std::{fs, path::PathBuf};
 /*
 /// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
 https://docs.rs/jwalk/latest/jwalk/ - test if parrallelizm is a thing
-https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTypeExt.html is_symlink_dir
-https://doc.rust-lang.org/stable/std/os/windows/fs/trait.MetadataExt.html file_attributes
 */
 
 fn main() {
@@ -48,11 +46,7 @@ fn main() {
 
     match fs::metadata(&path) {
         Ok(meta) => {
-            let root = Node {
-                path: path,
-                depth: 0,
-                metadata: meta,
-            };
+            let root = Node::new_root(path, meta);
             walk(&args, &root);
         }
         Err(error) => {
@@ -108,9 +102,22 @@ fn walk(args: &Args, root: &Node) {
             show(&args, &node, &path);
         }
 
-        // Traverse if folder
-        if node.metadata.is_dir() {
-            walk(&args, &node);
+        // Traverse if directory
+        if node.is_directory() {
+            let skip_traversal = node.is_link() && args.dont_traverse_links;
+            let do_traversal = !skip_traversal;
+
+            if do_traversal {
+                walk(&args, &node);
+            }
+            else {
+                if args.verbose {
+                    println!(
+                        "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
+                        node.path.display()
+                    );
+                }
+            }
         }
     }
 }
@@ -160,8 +167,6 @@ fn exclude(args: &Args, node: &Node) -> bool {
     false
 }
 
-
-
 fn trim(args: &Args, item: &Node) -> String {
     let path = normalize(item.path.display());
 
@@ -188,7 +193,7 @@ pub fn normalize(path: std::path::Display) -> String {
     path.collect()
 }
 
-pub fn show_entry(args: &Args, node: &Node, path: &str) -> bool {
+fn show_entry(args: &Args, node: &Node, path: &str) -> bool {
     // Hide files
     if args.hide_files && node.is_file() {
         if args.verbose {
