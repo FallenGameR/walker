@@ -34,6 +34,7 @@ cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксис�
 cargo run -- "d:\" -m1 -Rfa
 
 cargo run -- ~\Documents\Powershell\
+cargo run -- ~\Documents\Powershell\Modules -f
 
 # WTF here (old walkdir implementation)
 cargo run -- -p "C:/" -vd1

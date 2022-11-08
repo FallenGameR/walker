@@ -194,7 +194,7 @@ pub fn show_entry(args: &Args, node: &Node, path: &str) -> bool {
         if args.verbose {
             println!("Hiding {path} file because arguments say to hide files | {node:?}");
         }
-        return true;
+        return false;
     }
 
     // Hide directories, but it is still walked

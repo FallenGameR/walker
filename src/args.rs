@@ -74,11 +74,8 @@ impl Args {
     /// - needs to use correct /\
     /// - needs not to have trailing /
     fn resolve_start_dir(path: &Option<String>) -> String {
-        // Resolve initial value
-        let path = match path {
-            Some(path) => PathBuf::from(path),
-            None => std::env::current_dir().unwrap(), // uses \ and there is no trailing \
-        };
+        // Resolve home folder and initial value
+        let path = Args::resolve_initial_value(path);
 
         // Make sure it is a folder
         match path.metadata() {
@@ -106,5 +103,19 @@ impl Args {
         }
 
         path
+    }
+
+    fn resolve_initial_value(path: &Option<String>) -> PathBuf {
+        if let Some(path) = path {
+            if path.contains("~") {
+                let home = std::env::var("HOME").expect("ERR: Home environment variable needs to be defined");
+                return PathBuf::from(path.replace("~", &home));
+            }
+
+            return PathBuf::from(path);
+        }
+
+        // uses \ and there is no trailing \
+        std::env::current_dir().unwrap()
     }
 }
