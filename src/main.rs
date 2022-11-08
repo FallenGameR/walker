@@ -100,9 +100,15 @@ fn walk(args: &Args, root: &Node) {
             continue;
         }
 
-        render(&args, &node);
+        // The path to output
+        let path = trim(&args, &node);
 
-        // Traverse children
+        // Show if not hidden
+        if show_entry(&args, &node, &path) {
+            show(&args, &node, &path);
+        }
+
+        // Traverse if folder
         if node.metadata.is_dir() {
             walk(&args, &node);
         }
@@ -154,16 +160,7 @@ fn exclude(args: &Args, node: &Node) -> bool {
     false
 }
 
-/// Inline?
-fn render(args: &Args, node: &Node) {
-    // The path to output
-    let path = trim(&args, &node);
 
-    // Show if accepted if needed
-    if show_entry(args, node, &path) {
-        show(&args, &node, &path);
-    }
-}
 
 fn trim(args: &Args, item: &Node) -> String {
     let path = normalize(item.path.display());
@@ -182,7 +179,6 @@ fn trim(args: &Args, item: &Node) -> String {
     result
 }
 
-/// Inline?
 pub fn normalize(path: std::path::Display) -> String {
     let path = path.to_string();
     let path = path.chars().map(|c| match c {
