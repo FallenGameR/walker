@@ -33,6 +33,8 @@ cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксис�
 cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/" -e "TestResults" -e src -Ra
 cargo run -- "d:\" -m1 -Rfa
 
+cargo run -- ~\Documents\Powershell\
+
 # WTF here (old walkdir implementation)
 cargo run -- -p "C:/" -vd1
 cargo run -- -p "C:/" -wvd1
