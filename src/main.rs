@@ -64,85 +64,81 @@ fn main() {
 /// not to use recursion here but rather use queue/stack
 fn walk(args: &Args, root: Node) {
     // Prepare the iteration
-    let walk = VecDeque::with_capacity(args::BUFFER_SIZE);
+    let mut walk = VecDeque::with_capacity(args::BUFFER_SIZE);
     walk.push_back(root);
     // slice.chunk - separate by non overlaping groups
 
-    while let Some(node) = walk.pop_back() {
+    while let Some(node) = walk.pop_front() {
         // Exclude the entry and its descendants
-        if exclude(&args, &node) {
+        if is_excluded(&args, &node) {
             continue;
         }
 
+        // Show path if allowed
+        let path = trim(&args, &node);
 
+        if needs_showing(&args, &node, &path) {
+            show(&args, &node, &path);
+        }
 
+        // Traverse only directories
+        if !node.is_directory() {
+            continue;
+        }
 
+        // Traverse symlinks by default, but this could have been disabled
+        if node.is_link() && args.dont_traverse_links {
+            if args.verbose {
+                println!(
+                    "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
+                    node.path.display()
+                );
+            }
+            continue;
+        }
+
+        // Prepare the traversal
         let iterator = match fs::read_dir(&node.path) {
             Ok(iterator) => iterator,
             Err(error) => {
                 if args.verbose {
                     eprintln!(
-                        "ERR: failed to read directory {}, error {:?}",
-                        &node.path.display(),
-                        error
+                        "ERR: failed to read directory {error}, error {:?}",
+                        &node.path.display()
                     );
                 }
-                return;
+                continue;
             }
         };
 
-    //for entry in iterator {
-        // Create node to process and walk through
-        let node = match Node::new(&args, entry, &root.depth + 1) {
-            Some(node) => node,
-            None => continue,
-        };
-
-
-
-        // The path to output
-        let path = trim(&args, &node);
-
-        // Show if not hidden
-        if show_entry(&args, &node, &path) {
-            show(&args, &node, &path);
-        }
-
-        // Traverse if directory
-        if node.is_directory() {
-            let skip_traversal = node.is_link() && args.dont_traverse_links;
-            let do_traversal = !skip_traversal;
-
-            if do_traversal {
-                walk.push_back(node);
-                //walk(&args, &node);
-            }
-            else {
-                if args.verbose {
-                    println!(
-                        "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
-                        node.path.display()
-                    );
-                }
+        // Convert to nodes and do the traversal
+        let fixed = iterator.collect::<Vec<_>>();
+        //fixed.reverse();
+        for entry in fixed {
+            if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
+                walk.push_back(new_node);
             }
         }
     }
 }
 
-fn exclude(args: &Args, node: &Node) -> bool {
+// pop_front, push_back - wide
+// pop_back, reverse, push_back - deep - storing in collection costs 0.1s
+
+fn is_excluded(args: &Args, node: &Node) -> bool {
     // Exclude unresolvable
     let file_entry_name = match node.path.file_name() {
         Some(name) => name,
         None => {
             if args.verbose {
-                println!("Excluding node since we could not get its file name | {node:?}");
+                eprintln!("ERR: failed to get the file name for the node | {node:?}");
             }
             return true;
         }
     };
 
     // Exclude when max depth limit is reached
-    if node.depth >= args.max_depth_resolved {
+    if node.depth > args.max_depth_resolved {
         if args.verbose {
             println!(
                 "Excluding {} entry because max depth limit of {} is reached | {node:?}",
@@ -218,7 +214,7 @@ pub fn normalize(path: std::path::Display) -> String {
     path.collect()
 }
 
-fn show_entry(args: &Args, node: &Node, path: &str) -> bool {
+fn needs_showing(args: &Args, node: &Node, path: &str) -> bool {
     // Hide files
     if args.hide_files && node.is_file() {
         if args.verbose {

@@ -12,6 +12,10 @@ pub struct Args {
     #[clap(skip)]
     pub start_dir: String,
 
+    /// Maximum depth of traversal resolved from max_depth
+    #[clap(skip)]
+    pub max_depth_resolved: usize,
+
     /// Path to start from (current folder by default)
     pub path: Option<String>,
 
@@ -30,9 +34,6 @@ pub struct Args {
     /// Maximum depth of traversal, unlimited by default, children of root has depth 1
     #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
-
-    /// Maximum depth of traversal resolved from max_depth
-    pub max_depth_resolved: usize,
 
     /// Do not traverse directory symbolic links
     #[arg(short = 'l', long)]
