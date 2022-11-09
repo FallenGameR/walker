@@ -2,7 +2,7 @@ mod args;
 mod node;
 use args::Args;
 use node::Node;
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, collections::VecDeque};
 //use anyhow::Error;
 //use walkdir;
 //use anyhow::Result;
@@ -47,7 +47,7 @@ fn main() {
     match fs::metadata(&path) {
         Ok(meta) => {
             let root = Node::new_root(path, meta);
-            walk(&args, &root);
+            walk(&args, root);
         }
         Err(error) => {
             if args.verbose {
@@ -62,12 +62,13 @@ fn main() {
 
 /// To support breadth first approach and parrallelizm we need
 /// not to use recursion here but rather use queue/stack
-fn walk(args: &Args, root: &Node) {
+fn walk(args: &Args, root: Node) {
     // Limit traversal
     if root.depth >= args.max_depth.unwrap_or(usize::MAX) {
         return;
     }
 
+    // Prepare the iteration
     let iterator = match fs::read_dir(&root.path) {
         Ok(iterator) => iterator,
         Err(error) => {
@@ -82,7 +83,15 @@ fn walk(args: &Args, root: &Node) {
         }
     };
 
-    for entry in iterator {
+    let walk = VecDeque::with_capacity(args::BUFFER_SIZE);
+    walk.push_back(root);
+    // slice.chunk - separate by non overlaping groups
+
+    while let Some(node) = walk.pop_back() {
+
+
+
+    //for entry in iterator {
         // Create node to process and walk through
         let node = match Node::new(&args, entry, &root.depth + 1) {
             Some(node) => node,
@@ -108,7 +117,8 @@ fn walk(args: &Args, root: &Node) {
             let do_traversal = !skip_traversal;
 
             if do_traversal {
-                walk(&args, &node);
+                walk.push_back(node);
+                //walk(&args, &node);
             }
             else {
                 if args.verbose {

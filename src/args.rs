@@ -2,6 +2,8 @@ use crate::normalize;
 use clap::Parser;
 use std::path::PathBuf;
 
+pub const BUFFER_SIZE: usize = 1000;
+
 /// Fast folder walker to be used as replacement for the default fzf walker
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
