@@ -31,6 +31,9 @@ pub struct Args {
     #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
 
+    /// Maximum depth of traversal resolved from max_depth
+    pub max_depth_resolved: usize,
+
     /// Do not traverse directory symbolic links
     #[arg(short = 'l', long)]
     pub dont_traverse_links: bool,
@@ -68,6 +71,7 @@ impl Args {
     pub fn new() -> Args {
         let mut args = Args::parse();
         args.start_dir = Self::resolve_start_dir(&args.path);
+        args.max_depth_resolved = args.max_depth.unwrap_or(usize::MAX);
         args
     }
 

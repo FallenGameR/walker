@@ -63,33 +63,33 @@ fn main() {
 /// To support breadth first approach and parrallelizm we need
 /// not to use recursion here but rather use queue/stack
 fn walk(args: &Args, root: Node) {
-    // Limit traversal
-    if root.depth >= args.max_depth.unwrap_or(usize::MAX) {
-        return;
-    }
-
     // Prepare the iteration
-    let iterator = match fs::read_dir(&root.path) {
-        Ok(iterator) => iterator,
-        Err(error) => {
-            if args.verbose {
-                eprintln!(
-                    "ERR: failed to read directory {}, error {:?}",
-                    &root.path.display(),
-                    error
-                );
-            }
-            return;
-        }
-    };
-
     let walk = VecDeque::with_capacity(args::BUFFER_SIZE);
     walk.push_back(root);
     // slice.chunk - separate by non overlaping groups
 
     while let Some(node) = walk.pop_back() {
+        // Exclude the entry and its descendants
+        if exclude(&args, &node) {
+            continue;
+        }
 
 
+
+
+        let iterator = match fs::read_dir(&node.path) {
+            Ok(iterator) => iterator,
+            Err(error) => {
+                if args.verbose {
+                    eprintln!(
+                        "ERR: failed to read directory {}, error {:?}",
+                        &node.path.display(),
+                        error
+                    );
+                }
+                return;
+            }
+        };
 
     //for entry in iterator {
         // Create node to process and walk through
@@ -98,10 +98,7 @@ fn walk(args: &Args, root: Node) {
             None => continue,
         };
 
-        // Skip the entry and its descendants
-        if exclude(&args, &node) {
-            continue;
-        }
+
 
         // The path to output
         let path = trim(&args, &node);
@@ -133,12 +130,30 @@ fn walk(args: &Args, root: Node) {
 }
 
 fn exclude(args: &Args, node: &Node) -> bool {
+    // Exclude unresolvable
     let file_entry_name = match node.path.file_name() {
         Some(name) => name,
-        None => return false, // Fact there is no file name doesn't mean we can't walk it, does it?
+        None => {
+            if args.verbose {
+                println!("Excluding node since we could not get its file name | {node:?}");
+            }
+            return true;
+        }
     };
 
-    // Exclude excluded
+    // Exclude when max depth limit is reached
+    if node.depth >= args.max_depth_resolved {
+        if args.verbose {
+            println!(
+                "Excluding {} entry because max depth limit of {} is reached | {node:?}",
+                file_entry_name.to_string_lossy(),
+                args.max_depth_resolved
+            );
+        }
+        return true;
+    }
+
+    // Exclude explicitly excluded
     for excluded in &args.excluded {
         if file_entry_name == excluded.as_str() {
             if args.verbose {
@@ -152,7 +167,7 @@ fn exclude(args: &Args, node: &Node) -> bool {
         }
     }
 
-    // Exclude dots (by default)
+    // Exclude dots (done by default)
     if !args.show_dots && node.is_dot() {
         if args.verbose {
             println!(
@@ -163,7 +178,7 @@ fn exclude(args: &Args, node: &Node) -> bool {
         return true;
     }
 
-    // Exclude hidden (by default)
+    // Exclude hidden (done by default)
     if !args.show_hidden && node.is_hidden() {
         if args.verbose {
             println!(
