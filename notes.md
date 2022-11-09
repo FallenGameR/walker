@@ -33,9 +33,17 @@ cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксис�
 cargo run -- "d:/OneDrive/Projects/Coding/Подсветка синтаксиса/" -e "TestResults" -e src -Ra
 cargo run -- "d:\" -m1 -Rfa
 
+$a = cargo run -- d:\src\golds\pf\
+
 cargo run -- ~\Documents\Powershell\
 cargo run -- ~\Documents\Powershell\Modules -f
 cargo run -- d:\src\mv -m1 -aHD -e ".git"
+
+
+cargo build -r
+hyperfine.exe ".\target\release\walker.exe d:\src\golds\pf\" # 3.6s
+
+
 
 ```
 
