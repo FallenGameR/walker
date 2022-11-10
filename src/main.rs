@@ -3,14 +3,6 @@ mod node;
 use args::Args;
 use node::Node;
 use std::{fs, path::PathBuf, collections::VecDeque};
-//use anyhow::Error;
-//use walkdir;
-//use anyhow::Result;
-
-/*
-/// Environment variables: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch12-05-working-with-environment-variables.html
-https://docs.rs/jwalk/latest/jwalk/ - test if parrallelizm is a thing
-*/
 
 fn main() {
     let args = Args::new();

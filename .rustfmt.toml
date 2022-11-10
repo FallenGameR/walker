@@ -1,7 +1,0 @@
-# There is a bug in rust-analyzer that prevents it to use rustfmt config
-# https://github.com/rust-lang/rust-analyzer/issues/6973
-# https://github.com/rust-lang/rust-analyzer/issues/4486#event-4257219279
-
-#turns out this is unstable feature =(
-#run wia cargo fmt
-#control_brace_style = "AlwaysNextLine"

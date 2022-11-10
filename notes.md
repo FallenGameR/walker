@@ -41,8 +41,7 @@ cargo run -- d:\src\mv -m1 -aHD -e ".git"
 
 
 cargo build -r
-hyperfine.exe ".\target\release\walker.exe d:\src\golds\pf\" # 3.6s wide
-hyperfine.exe ".\target\release\walker.exe d:\src\golds\pf\" # 3.8s deep
+hyperfine.exe ".\target\release\walker.exe d:\src\golds\pf\" # 3.4s wide
 cargo run -- d:\src\golds\pf\ -f
 
 
