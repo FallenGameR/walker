@@ -55,10 +55,6 @@ pub struct Args {
     #[arg(short = 'H', long)]
     pub show_hidden: bool,
 
-    /// ** List the most deep entries first
-    #[arg(long)]
-    pub depth_first_search: bool,
-
     /// Use absolute paths, don't trim the output
     #[arg(short, long)]
     pub absolute_paths: bool,

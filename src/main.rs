@@ -112,18 +112,13 @@ fn walk(args: &Args, root: Node) {
         };
 
         // Convert to nodes and do the traversal
-        let fixed = iterator.collect::<Vec<_>>();
-        //fixed.reverse();
-        for entry in fixed {
+        for entry in iterator {
             if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
                 walk.push_back(new_node);
             }
         }
     }
 }
-
-// pop_front, push_back - wide
-// pop_back, reverse, push_back - deep - storing in collection costs 0.1s
 
 fn is_excluded(args: &Args, node: &Node) -> bool {
     // Exclude unresolvable
