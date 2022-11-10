@@ -4,6 +4,13 @@ use args::Args;
 use node::Node;
 use std::{fs, path::PathBuf, collections::VecDeque};
 
+// https://rust-lang-nursery.github.io/rust-cookbook/concurrency/parallel.html
+// https://rust-lang-nursery.github.io/rust-cookbook/concurrency/threads.html
+// https://smallcultfollowing.com/babysteps/blog/2015/12/18/rayon-data-parallelism-in-rust/
+// https://github.com/rayon-rs/rayon/blob/master/FAQ.md
+// https://github.com/crossbeam-rs/crossbeam
+// https://docs.rs/crossbeam-channel/0.5.6/crossbeam_channel/
+
 fn main() {
     let args = Args::new();
 
