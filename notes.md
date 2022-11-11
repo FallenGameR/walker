@@ -11,6 +11,16 @@
 
 
 
+        .reduce(|| 0, |x, y| x + y);
+
+
+
+
+
+
+
+
+
 
 
 > spellchecker: disable
