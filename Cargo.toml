@@ -9,4 +9,5 @@ authors = ["FallenGameR"]
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 winapi = { version = "0.3.9", features = ["winnt"] }
+crossbeam-channel = "0.5"
 #anyhow = "1.0"

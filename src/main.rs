@@ -1,8 +1,9 @@
 mod args;
 mod node;
 use args::Args;
+use crossbeam_channel::unbounded;
 use node::Node;
-use std::{fs, path::PathBuf, collections::VecDeque};
+use std::{collections::VecDeque, fs, path::PathBuf};
 
 // https://rust-lang-nursery.github.io/rust-cookbook/concurrency/parallel.html
 // https://rust-lang-nursery.github.io/rust-cookbook/concurrency/threads.html
@@ -61,13 +62,39 @@ fn main() {
 
 /// To support breadth first approach and parrallelizm we need
 /// not to use recursion here but rather use queue/stack
+///
+/// Adapt https://rust-lang-nursery.github.io/rust-cookbook/concurrency/threads.html#calculate-sha256-sum-of-iso-files-concurrently
+/// But us mpmc channel
+///
+/// Convert from e?printl to enum - Actions ShowPath/Skip/Exclude/Error or something like that
 fn walk(args: &Args, root: Node) {
     // Prepare the iteration
-    let mut walk = VecDeque::with_capacity(args::BUFFER_SIZE);
-    walk.push_back(root);
+    let (s, r) = unbounded();
+    match s.send(root) {
+        Ok(()) => (),
+        Err(err) => {
+            if args.verbose {
+                println!("Problem sending root to unbound channel, error {err:?}");
+            }
+            return;
+        },
+    };
+
+    //let mut dequeue = VecDeque::with_capacity(args::BUFFER_SIZE);
+    //dequeue.push_back(root);
     // slice.chunk - separate by non overlaping groups
 
-    while let Some(node) = walk.pop_front() {
+    while !r.is_empty() {
+        let node = match r.recv() {
+            Ok(node) => node,
+            Err(err) => {
+                if args.verbose {
+                    println!("Problem receiving from unbound channel, error {err:?}");
+                }
+                continue;
+            }
+        };
+
         // Exclude the entry and its descendants
         if is_excluded(&args, &node) {
             continue;
@@ -113,7 +140,16 @@ fn walk(args: &Args, root: Node) {
         // Convert to nodes and do the traversal
         for entry in iterator {
             if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
-                walk.push_back(new_node);
+                match s.send(new_node) {
+                    Ok(()) => (),
+                    Err(err) => {
+                        if args.verbose {
+                            println!("Problem sending new_node to unbound channel, error {err:?}");
+                        }
+                        return;
+                    },
+                };
+                //dequeue.push_back(new_node);
             }
         }
     }
