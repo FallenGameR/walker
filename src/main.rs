@@ -146,7 +146,7 @@ fn walk(args: &Args, root: Node) {
                         if args.verbose {
                             println!("Problem sending new_node to unbound channel, error {err:?}");
                         }
-                        return;
+                        continue;
                     },
                 };
                 //dequeue.push_back(new_node);
