@@ -184,7 +184,9 @@ fn is_excluded(args: &Args, node: &Node) -> bool {
 
     // Exclude explicitly excluded
     for excluded in &args.excluded {
-        if file_entry_name == excluded.as_str() {
+        let lowercase = file_entry_name.to_ascii_lowercase();
+        let lowercase = lowercase.to_string_lossy();
+        if lowercase == excluded.as_str() {
             if args.verbose {
                 println!(
                     "Excluding {} entry because arguments say to exclude {} | {node:?}",
