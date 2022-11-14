@@ -63,24 +63,11 @@ fn main() {
 ///
 /// Convert from e?printl to enum - Actions ShowPath/Skip/Exclude/Error or something like that
 fn walk(args: &Args, root: Node) {
-    // Prepare the iteration
-    let (s, r) = unbounded();
-    let rc = r.clone();
-    match s.send(root) {
-        Ok(()) => (),
-        Err(err) => {
-            if args.verbose {
-                println!("Problem sending root to unbound channel, error {err:?}");
-            }
-            return;
-        },
-    };
 
     // Prepare thread pool
+    let (s, r) = unbounded();
     let logical_cpus = num_cpus::get();
     let pool = ThreadPool::new(logical_cpus);
-    //let pool = ThreadPool::with_name("worker".into(), logical_cpus);
-
 
     // Need to wait until all threads will exit
     // Threads need to be blocking on channel?
@@ -91,14 +78,13 @@ fn walk(args: &Args, root: Node) {
         let (s, r) = (s.clone(), r.clone());
 
         // https://docs.rs/crossbeam/0.8.2/crossbeam/macro.select.html
-        // Atomic increments until number of threads == logical_cpus?
 
         let lambda = move || {
 
-            let thread = thread::current();
-            let id = thread.id();
-            let name = thread.name();
-            println!("{id:?} - {name:?}");
+            //let thread = thread::current();
+            //let id = thread.id();
+            //let name = thread.name();
+            print!("");
 
             while !r.is_empty() { // rather until there is no work for either thread
                 let node = match r.recv() {
@@ -175,6 +161,19 @@ fn walk(args: &Args, root: Node) {
         // Start new thread
         pool.execute(lambda);
     }
+
+    // Prepare the iteration
+    match s.send(root) {
+        Ok(()) => (),
+        Err(err) => {
+            if args.verbose {
+                println!("Problem sending root to unbound channel, error {err:?}");
+            }
+            return;
+        },
+    };
+
+
     //*/
 
     /// for _ in 0..logical_cpus {
