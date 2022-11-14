@@ -5,14 +5,7 @@ use crossbeam_channel::unbounded;
 use node::Node;
 use threadpool::ThreadPool;
 use core::time;
-use std::{fs, path::PathBuf, sync::Arc, thread};
-
-// https://rust-lang-nursery.github.io/rust-cookbook/concurrency/parallel.html
-// https://rust-lang-nursery.github.io/rust-cookbook/concurrency/threads.html
-// https://smallcultfollowing.com/babysteps/blog/2015/12/18/rayon-data-parallelism-in-rust/
-// https://github.com/rayon-rs/rayon/blob/master/FAQ.md
-// https://github.com/crossbeam-rs/crossbeam
-// https://docs.rs/crossbeam-channel/0.5.6/crossbeam_channel/
+use std::{fs, path::PathBuf, thread};
 
 fn main() {
     let args = Args::new();
@@ -84,83 +77,87 @@ fn walk(args: &Args, root: Node) {
     };
 
     // Prepare thread pool
-    //let pool = ThreadPool::new(num_cpus::get());
-    let pool = ThreadPool::new(1);
-    let args = args.to_owned();
+    let logical_cpus = num_cpus::get();
+    let pool = ThreadPool::new(logical_cpus);
 
-    let lambda = move || {
-        while !r.is_empty() {
-            let node = match r.recv() {
-                Ok(node) => node,
-                Err(err) => {
-                    if args.verbose {
-                        println!("Problem receiving from unbound channel, error {err:?}");
+    for _ in 0..logical_cpus {
+        let args = args.to_owned();
+        let (s, r) = (s.clone(), r.clone());
+
+        let lambda = move || {
+            while !r.is_empty() {
+                let node = match r.recv() {
+                    Ok(node) => node,
+                    Err(err) => {
+                        if args.verbose {
+                            println!("Problem receiving from unbound channel, error {err:?}");
+                        }
+                        continue;
                     }
+                };
+
+                // Exclude the entry and its descendants
+                if is_excluded(&args, &node) {
                     continue;
                 }
-            };
 
-            // Exclude the entry and its descendants
-            if is_excluded(&args, &node) {
-                continue;
-            }
+                // Show path if allowed
+                let path = trim(&args, &node);
 
-            // Show path if allowed
-            let path = trim(&args, &node);
-
-            if needs_showing(&args, &node, &path) {
-                show(&args, &node, &path);
-            }
-
-            // Traverse only directories
-            if !node.is_directory() {
-                continue;
-            }
-
-            // Traverse symlinks by default, but this could have been disabled
-            if node.is_link() && args.dont_traverse_links {
-                if args.verbose {
-                    println!(
-                        "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
-                        node.path.display()
-                    );
+                if needs_showing(&args, &node, &path) {
+                    show(&args, &node, &path);
                 }
-                continue;
-            }
 
-            // Prepare the traversal
-            let iterator = match fs::read_dir(&node.path) {
-                Ok(iterator) => iterator,
-                Err(error) => {
+                // Traverse only directories
+                if !node.is_directory() {
+                    continue;
+                }
+
+                // Traverse symlinks by default, but this could have been disabled
+                if node.is_link() && args.dont_traverse_links {
                     if args.verbose {
-                        eprintln!(
-                            "ERR: failed to read directory {error}, error {:?}",
-                            &node.path.display()
+                        println!(
+                            "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
+                            node.path.display()
                         );
                     }
                     continue;
                 }
-            };
 
-            // Convert to nodes and do the traversal
-            for entry in iterator {
-                if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
-                    match s.send(new_node) {
-                        Ok(()) => (),
-                        Err(err) => {
-                            if args.verbose {
-                                println!("Problem sending new_node to unbound channel, error {err:?}");
-                            }
-                            continue;
-                        },
-                    };
+                // Prepare the traversal
+                let iterator = match fs::read_dir(&node.path) {
+                    Ok(iterator) => iterator,
+                    Err(error) => {
+                        if args.verbose {
+                            eprintln!(
+                                "ERR: failed to read directory {error}, error {:?}",
+                                &node.path.display()
+                            );
+                        }
+                        continue;
+                    }
+                };
+
+                // Convert to nodes and do the traversal
+                for entry in iterator {
+                    if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
+                        match s.send(new_node) {
+                            Ok(()) => (),
+                            Err(err) => {
+                                if args.verbose {
+                                    println!("Problem sending new_node to unbound channel, error {err:?}");
+                                }
+                                continue;
+                            },
+                        };
+                    }
                 }
             }
-        }
-    };
+        };
 
-    // Use threads
-    pool.execute(lambda);
+        // Start new thread
+        pool.execute(lambda);
+    }
 
     // Wait until output is exhausted,
     // Otherwise main thread will exit without waiting for the full output
