@@ -79,13 +79,28 @@ fn walk(args: &Args, root: Node) {
     // Prepare thread pool
     let logical_cpus = num_cpus::get();
     let pool = ThreadPool::new(logical_cpus);
+    //let pool = ThreadPool::with_name("worker".into(), logical_cpus);
 
+
+    // Need to wait until all threads will exit
+    // Threads need to be blocking on channel?
+
+    //*
     for _ in 0..logical_cpus {
         let args = args.to_owned();
         let (s, r) = (s.clone(), r.clone());
 
+        // https://docs.rs/crossbeam/0.8.2/crossbeam/macro.select.html
+        // Atomic increments until number of threads == logical_cpus?
+
         let lambda = move || {
-            while !r.is_empty() {
+
+            let thread = thread::current();
+            let id = thread.id();
+            let name = thread.name();
+            println!("{id:?} - {name:?}");
+
+            while !r.is_empty() { // rather until there is no work for either thread
                 let node = match r.recv() {
                     Ok(node) => node,
                     Err(err) => {
@@ -105,6 +120,8 @@ fn walk(args: &Args, root: Node) {
                 let path = trim(&args, &node);
 
                 if needs_showing(&args, &node, &path) {
+                    let id = thread::current().id();
+                    print!("{id:?} - ");
                     show(&args, &node, &path);
                 }
 
@@ -158,13 +175,17 @@ fn walk(args: &Args, root: Node) {
         // Start new thread
         pool.execute(lambda);
     }
+    //*/
 
-    // Wait until output is exhausted,
-    // Otherwise main thread will exit without waiting for the full output
-    let refresh_interval = time::Duration::from_millis(100);
-    while !rc.is_empty() {
-        thread::sleep(refresh_interval);
-    }
+    /// for _ in 0..logical_cpus {
+    ///     pool.execute(|| {
+    ///         let thread = thread::current();
+    ///         let id = thread.id();
+    ///         let name = thread.name();
+    ///         println!("{id:?} - {name:?}");
+    ///     });
+    /// }
+    pool.join();
 }
 
 fn is_excluded(args: &Args, node: &Node) -> bool {
