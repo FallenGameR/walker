@@ -66,7 +66,7 @@ fn walk(args: &Args, root: Node) {
 
     // Prepare thread pool
     let (s, r) = unbounded();
-    let logical_cpus = num_cpus::get();
+    let logical_cpus = args.threads.unwrap();
     let pool = ThreadPool::new(logical_cpus);
 
     // Need to wait until all threads will exit

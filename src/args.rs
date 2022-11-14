@@ -33,6 +33,10 @@ pub struct Args {
     #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
 
+    /// Number of threads to use, not specified or 0 means to use all logical CPUs
+    #[arg(short, long)]
+    pub threads: Option<usize>,
+
     /// Do not traverse directory symbolic links
     #[arg(short = 'l', long)]
     pub dont_traverse_links: bool,
@@ -69,6 +73,9 @@ impl Args {
         args.max_depth_resolved = args.max_depth.unwrap_or(usize::MAX);
         for excluded in args.excluded.iter_mut() {
             *excluded = excluded.to_lowercase();
+        }
+        if (args.threads == None) || (args.threads == Some(0)) {
+            args.threads = Some(num_cpus::get());
         }
         args
     }
