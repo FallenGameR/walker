@@ -3,6 +3,7 @@ mod node;
 use args::Args;
 use crossbeam_channel::unbounded;
 use node::Node;
+use threadpool::ThreadPool;
 use std::{collections::VecDeque, fs, path::PathBuf};
 
 // https://rust-lang-nursery.github.io/rust-cookbook/concurrency/parallel.html
@@ -80,79 +81,81 @@ fn walk(args: &Args, root: Node) {
         },
     };
 
-    //let mut dequeue = VecDeque::with_capacity(args::BUFFER_SIZE);
-    //dequeue.push_back(root);
-    // slice.chunk - separate by non overlaping groups
+    // Prepare thread pool
+    //let pool = ThreadPool::new(num_cpus::get());
 
-    while !r.is_empty() {
-        let node = match r.recv() {
-            Ok(node) => node,
-            Err(err) => {
-                if args.verbose {
-                    println!("Problem receiving from unbound channel, error {err:?}");
+    let lambda = || {
+        while !r.is_empty() {
+            let node = match r.recv() {
+                Ok(node) => node,
+                Err(err) => {
+                    if args.verbose {
+                        println!("Problem receiving from unbound channel, error {err:?}");
+                    }
+                    continue;
                 }
+            };
+
+            // Exclude the entry and its descendants
+            if is_excluded(&args, &node) {
                 continue;
             }
-        };
 
-        // Exclude the entry and its descendants
-        if is_excluded(&args, &node) {
-            continue;
-        }
+            // Show path if allowed
+            let path = trim(&args, &node);
 
-        // Show path if allowed
-        let path = trim(&args, &node);
-
-        if needs_showing(&args, &node, &path) {
-            show(&args, &node, &path);
-        }
-
-        // Traverse only directories
-        if !node.is_directory() {
-            continue;
-        }
-
-        // Traverse symlinks by default, but this could have been disabled
-        if node.is_link() && args.dont_traverse_links {
-            if args.verbose {
-                println!(
-                    "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
-                    node.path.display()
-                );
+            if needs_showing(&args, &node, &path) {
+                show(&args, &node, &path);
             }
-            continue;
-        }
 
-        // Prepare the traversal
-        let iterator = match fs::read_dir(&node.path) {
-            Ok(iterator) => iterator,
-            Err(error) => {
+            // Traverse only directories
+            if !node.is_directory() {
+                continue;
+            }
+
+            // Traverse symlinks by default, but this could have been disabled
+            if node.is_link() && args.dont_traverse_links {
                 if args.verbose {
-                    eprintln!(
-                        "ERR: failed to read directory {error}, error {:?}",
-                        &node.path.display()
+                    println!(
+                        "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
+                        node.path.display()
                     );
                 }
                 continue;
             }
-        };
 
-        // Convert to nodes and do the traversal
-        for entry in iterator {
-            if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
-                match s.send(new_node) {
-                    Ok(()) => (),
-                    Err(err) => {
-                        if args.verbose {
-                            println!("Problem sending new_node to unbound channel, error {err:?}");
-                        }
-                        continue;
-                    },
-                };
-                //dequeue.push_back(new_node);
+            // Prepare the traversal
+            let iterator = match fs::read_dir(&node.path) {
+                Ok(iterator) => iterator,
+                Err(error) => {
+                    if args.verbose {
+                        eprintln!(
+                            "ERR: failed to read directory {error}, error {:?}",
+                            &node.path.display()
+                        );
+                    }
+                    continue;
+                }
+            };
+
+            // Convert to nodes and do the traversal
+            for entry in iterator {
+                if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
+                    match s.send(new_node) {
+                        Ok(()) => (),
+                        Err(err) => {
+                            if args.verbose {
+                                println!("Problem sending new_node to unbound channel, error {err:?}");
+                            }
+                            continue;
+                        },
+                    };
+                    //dequeue.push_back(new_node);
+                }
             }
         }
-    }
+    };
+    lambda();
 }
 
 fn is_excluded(args: &Args, node: &Node) -> bool {
