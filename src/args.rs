@@ -2,10 +2,8 @@ use crate::normalize;
 use clap::Parser;
 use std::path::PathBuf;
 
-pub const BUFFER_SIZE: usize = 1000;
-
 /// Fast folder walker to be used as replacement for the default fzf walker
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// Start directory from where the walk started, ends with /
@@ -69,6 +67,9 @@ impl Args {
         let mut args = Args::parse();
         args.start_dir = Self::resolve_start_dir(&args.path);
         args.max_depth_resolved = args.max_depth.unwrap_or(usize::MAX);
+        for excluded in args.excluded.iter_mut() {
+            *excluded = excluded.to_lowercase();
+        }
         args
     }
 

@@ -4,7 +4,8 @@ use args::Args;
 use crossbeam_channel::unbounded;
 use node::Node;
 use threadpool::ThreadPool;
-use std::{collections::VecDeque, fs, path::PathBuf};
+use core::time;
+use std::{fs, path::PathBuf, sync::Arc, thread};
 
 // https://rust-lang-nursery.github.io/rust-cookbook/concurrency/parallel.html
 // https://rust-lang-nursery.github.io/rust-cookbook/concurrency/threads.html
@@ -71,6 +72,7 @@ fn main() {
 fn walk(args: &Args, root: Node) {
     // Prepare the iteration
     let (s, r) = unbounded();
+    let rc = r.clone();
     match s.send(root) {
         Ok(()) => (),
         Err(err) => {
@@ -83,8 +85,10 @@ fn walk(args: &Args, root: Node) {
 
     // Prepare thread pool
     //let pool = ThreadPool::new(num_cpus::get());
+    let pool = ThreadPool::new(1);
+    let args = args.to_owned();
 
-    let lambda = || {
+    let lambda = move || {
         while !r.is_empty() {
             let node = match r.recv() {
                 Ok(node) => node,
@@ -150,12 +154,20 @@ fn walk(args: &Args, root: Node) {
                             continue;
                         },
                     };
-                    //dequeue.push_back(new_node);
                 }
             }
         }
     };
-    lambda();
+
+    // Use threads
+    pool.execute(lambda);
+
+    // Wait until output is exhausted,
+    // Otherwise main thread will exit without waiting for the full output
+    let refresh_interval = time::Duration::from_millis(100);
+    while !rc.is_empty() {
+        thread::sleep(refresh_interval);
+    }
 }
 
 fn is_excluded(args: &Args, node: &Node) -> bool {

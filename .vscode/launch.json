@@ -21,10 +21,8 @@
                 }
             },
             "args": [
-                "-i",
-                ".\\.git\\",
-                "-i",
-                ".\\.gitignore"
+                "-e",
+                ".\\.git\\"
             ],
             "cwd": "${workspaceFolder}"
         },
