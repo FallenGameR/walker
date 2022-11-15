@@ -12,3 +12,4 @@ winapi = { version = "0.3.9", features = ["winnt"] }
 crossbeam-channel = "0.5"
 threadpool = "1.0"
 num_cpus = "1.0"
+jwalk = "0.5"

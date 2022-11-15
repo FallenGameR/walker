@@ -2,6 +2,7 @@ mod args;
 mod node;
 use args::Args;
 use crossbeam_channel::unbounded;
+use jwalk::{WalkDir, DirEntry};
 use node::Node;
 use threadpool::ThreadPool;
 use std::{fs, path::PathBuf, thread};
@@ -42,6 +43,7 @@ fn main() {
         Ok(meta) => {
             let root = Node::new_root(path, meta);
             walk(&args, root);
+            //jwalk(&args, root);
         }
         Err(error) => {
             if args.verbose {
@@ -52,6 +54,23 @@ fn main() {
             }
         }
     };
+}
+
+fn jwalk(args: &Args, root: Node) {
+    for entry in WalkDir::new(root.path).sort(true) {// {
+
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) =>  {
+                if args.verbose {
+                    println!("Problem receiving from unbound channel, error {err:?}");
+                }
+                continue;
+            }
+        };
+
+        println!("{}", entry.path().display());
+      }
 }
 
 /// To support breadth first approach and parrallelizm we need
@@ -78,12 +97,13 @@ fn walk(args: &Args, root: Node) {
 
         let lambda = move || {
 
+            // WTF: Why does printf here affects allocated threads?
             let thread = thread::current();
             let id = thread.id();
             print!("{id:?}/");
 
             while !r.is_empty() { // rather until there is no work for either thread
-                let node: Node = match r.recv() {
+                let node = match r.recv() {
                     Ok(node) => node,
                     Err(err) => {
                         if args.verbose {
@@ -93,7 +113,6 @@ fn walk(args: &Args, root: Node) {
                     }
                 };
 
-                /*
                 // Exclude the entry and its descendants
                 if is_excluded(&args, &node) {
                     continue;
@@ -123,7 +142,7 @@ fn walk(args: &Args, root: Node) {
                     }
                     continue;
                 }
-                */
+
                 // Prepare the traversal
                 let iterator = match fs::read_dir(&node.path) {
                     Ok(iterator) => iterator,
