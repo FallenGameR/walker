@@ -94,13 +94,13 @@ fn walk(args: &Args, root: Node) {
         let args = args.to_owned();
         let (s, r) = (s.clone(), r.clone());
 
-
         let lambda = move || {
 
             // WTF: Why does printf here affects allocated threads?
-            let thread = thread::current();
-            let id = thread.id();
-            print!("{id:?}/");
+            //let thread = thread::current();
+            //let id = thread.id();
+            //print!("{id:?}/");
+            print!("");
 
             while !r.is_empty() { // rather until there is no work for either thread
                 let node = match r.recv() {
@@ -122,8 +122,8 @@ fn walk(args: &Args, root: Node) {
                 let path = trim(&args, &node);
 
                 if needs_showing(&args, &node, &path) {
-                    let id = thread::current().id();
-                    print!("{id:?} - ");
+                    //let id = thread::current().id();
+                    //print!("{id:?} - ");
                     show(&args, &node, &path);
                 }
 

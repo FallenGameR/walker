@@ -34,7 +34,7 @@ pub struct Args {
     #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
 
-    /// Number of threads to use, not specified or 0 means to use all logical CPUs
+    /// Number of threads to use, not specified means 1 thread, 0 means to use all logical CPUs
     #[arg(short, long)]
     pub threads: Option<usize>,
 
@@ -75,7 +75,10 @@ impl Args {
         for excluded in args.excluded.iter_mut() {
             *excluded = excluded.to_lowercase();
         }
-        if (args.threads == None) || (args.threads == Some(0)) {
+        if args.threads == None {
+            args.threads = Some(1);
+        }
+        if args.threads == Some(0) {
             args.threads = Some(num_cpus::get());
         }
         args
