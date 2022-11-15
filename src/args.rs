@@ -18,6 +18,7 @@ pub struct Args {
     pub path: Option<String>,
 
     /// List of included entries (favorites)
+    /// -a doesn't seem to affect these
     #[arg(short = 'I', long)]
     pub included: Vec<String>,
 

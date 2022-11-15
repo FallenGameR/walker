@@ -4,7 +4,6 @@ use args::Args;
 use crossbeam_channel::unbounded;
 use node::Node;
 use threadpool::ThreadPool;
-use core::time;
 use std::{fs, path::PathBuf, thread};
 
 fn main() {
@@ -62,6 +61,9 @@ fn main() {
 /// But us mpmc channel
 ///
 /// Convert from e?printl to enum - Actions ShowPath/Skip/Exclude/Error or something like that
+///
+/// https://docs.rs/crossbeam/0.8.2/crossbeam/macro.select.html
+///
 fn walk(args: &Args, root: Node) {
 
     // Prepare thread pool
@@ -69,25 +71,19 @@ fn walk(args: &Args, root: Node) {
     let logical_cpus = args.threads.unwrap();
     let pool = ThreadPool::new(logical_cpus);
 
-    // Need to wait until all threads will exit
-    // Threads need to be blocking on channel?
-
-    //*
     for _ in 0..logical_cpus {
         let args = args.to_owned();
         let (s, r) = (s.clone(), r.clone());
 
-        // https://docs.rs/crossbeam/0.8.2/crossbeam/macro.select.html
 
         let lambda = move || {
 
-            //let thread = thread::current();
-            //let id = thread.id();
-            //let name = thread.name();
-            print!("");
+            let thread = thread::current();
+            let id = thread.id();
+            print!("{id:?}/");
 
             while !r.is_empty() { // rather until there is no work for either thread
-                let node = match r.recv() {
+                let node: Node = match r.recv() {
                     Ok(node) => node,
                     Err(err) => {
                         if args.verbose {
@@ -97,6 +93,7 @@ fn walk(args: &Args, root: Node) {
                     }
                 };
 
+                /*
                 // Exclude the entry and its descendants
                 if is_excluded(&args, &node) {
                     continue;
@@ -126,7 +123,7 @@ fn walk(args: &Args, root: Node) {
                     }
                     continue;
                 }
-
+                */
                 // Prepare the traversal
                 let iterator = match fs::read_dir(&node.path) {
                     Ok(iterator) => iterator,
@@ -173,17 +170,6 @@ fn walk(args: &Args, root: Node) {
         },
     };
 
-
-    //*/
-
-    /// for _ in 0..logical_cpus {
-    ///     pool.execute(|| {
-    ///         let thread = thread::current();
-    ///         let id = thread.id();
-    ///         let name = thread.name();
-    ///         println!("{id:?} - {name:?}");
-    ///     });
-    /// }
     pool.join();
 }
 

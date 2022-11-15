@@ -54,3 +54,7 @@ regular folder
 
 fzf << walker << codef
 add parrallell reading and breadth-first
+
+- Try without any logic applied - just plain iteration. I could have added something costly.
+- Why printf changes allocated threads? Should regular threads be used instead?
+- Test if jwalk is faster.
