@@ -41,8 +41,8 @@ cargo run -- d:\src\mv -m1 -aHD -e ".git"
 
 
 cargo build -r
-hyperfine.exe ".\target\release\walker.exe d:\src\golds\pf\" # 3.3s wide
-cargo run -- d:\src\golds\pf\ -f
+hyperfine.exe ".\target\release\walker.exe d:\src\golds\pf\" # 3s wide
+$a = cargo run -- d:\src\golds\pf\ # -f
 
 
 ```
