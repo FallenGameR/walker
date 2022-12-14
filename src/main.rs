@@ -20,7 +20,7 @@ fn main() {
     for node in args
         .command_line.included
         .iter()
-        .filter_map(|path| Node::new_injected(&args.command_line, &path))
+        .filter_map(|path| Node::new_injected(&args, &path))
     {
         // Don't trim and ignore -fd flags
         let path = node.path.display().to_string();
@@ -29,7 +29,7 @@ fn main() {
 
     // Insert start directory here
     if args.command_line.show_root {
-        if let Some(node) = Node::new_injected(&args.command_line, &args.start_dir) {
+        if let Some(node) = Node::new_injected(&args, &args.start_dir) {
             // Trim but ignore -fd flags
             let path = trim(&args, &node);
             show(&args, &node, &path);
@@ -61,6 +61,10 @@ fn jwalk(args: &Args, root: Node) -> Result<(), Error> {
 
     let excluded = &args.excluded;
     let walk_dir = walk_dir.process_read_dir(|depth, path, state, children| {
+
+        //if excluded.len() == 0 {
+        //    println!();
+        //}
 
         // Exclude explicitly excluded
         //children.iter_mut().for_each(|result| {
@@ -200,7 +204,7 @@ fn walk(args: &Args, root: Node) {
 
                 // Convert to nodes and do the traversal
                 for entry in iterator {
-                    if let Some(new_node) = Node::new(&args.command_line, entry, &node.depth + 1) {
+                    if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
                         match s.send(new_node) {
                             Ok(()) => (),
                             Err(err) => {
