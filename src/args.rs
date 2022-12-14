@@ -1,19 +1,24 @@
 use crate::normalize;
 use clap::Parser;
-use std::path::PathBuf;
+use std::{path::PathBuf, collections::HashSet, ffi::OsString};
+
+pub struct Args {
+    /// Start directory from where the walk started, ends with /
+    pub start_dir: String,
+
+    /// Maximum depth of traversal resolved from max_depth
+    pub max_depth_resolved: usize,
+
+
+    pub excluded: HashSet<OsString>,
+
+    pub command_line: CommandLine
+}
 
 /// Fast folder walker to be used as replacement for the default fzf walker
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
-pub struct Args {
-    /// Start directory from where the walk started, ends with /
-    #[clap(skip)]
-    pub start_dir: String,
-
-    /// Maximum depth of traversal resolved from max_depth
-    #[clap(skip)]
-    pub max_depth_resolved: usize,
-
+pub struct CommandLine {
     /// Path to start from (current folder by default)
     pub path: Option<String>,
 
@@ -33,10 +38,6 @@ pub struct Args {
     /// Maximum depth of traversal, unlimited by default, children of root has depth 1
     #[arg(short = 'm', long)]
     pub max_depth: Option<usize>,
-
-    /// Number of threads to use, not specified means 1 thread, 0 means to use all logical CPUs
-    #[arg(short, long)]
-    pub threads: Option<usize>,
 
     /// Do not traverse directory symbolic links
     #[arg(short = 'l', long)]
@@ -69,19 +70,20 @@ pub struct Args {
 
 impl Args {
     pub fn new() -> Args {
-        let mut args = Args::parse();
-        args.start_dir = Self::resolve_start_dir(&args.path);
-        args.max_depth_resolved = args.max_depth.unwrap_or(usize::MAX);
-        for excluded in args.excluded.iter_mut() {
-            *excluded = excluded.to_lowercase();
+        let command_line = CommandLine::parse();
+        Args {
+            start_dir: Self::resolve_start_dir(&command_line.path),
+            max_depth_resolved: command_line.max_depth.unwrap_or(usize::MAX),
+            excluded: {
+                let excluded = &command_line.excluded;
+                excluded
+                    .into_iter()
+                    .map(|e| e.to_ascii_lowercase())
+                    .map(|e| OsString::from(e))
+                    .collect()
+            },
+            command_line,
         }
-        if args.threads == None {
-            args.threads = Some(1);
-        }
-        if args.threads == Some(0) {
-            args.threads = Some(num_cpus::get());
-        }
-        args
     }
 
     /// Resolve start path and make sure it is valid:
