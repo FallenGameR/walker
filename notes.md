@@ -26,6 +26,41 @@ Options:
   -V, --version                Print version information
 ```
 
+## Tests
+
+> walker [PATH]   // Path to start from (current folder by default)
+
+cargo run -- "."
+cargo run -- "d:\"
+cargo run -- "d:\src\golds\pf\"
+
+> walker -I, --included <INCLUDED>  // List of included entries (favorites) -a doesn't seem to affect these
+
+cargo run -- -I "Included but absent" --included ".vscode" | select -f 10
+
+> walker -e, --excluded <EXCLUDED>  // List of excluded entries (just the name, it can match any part of the path)
+
+cargo run -- -e target
+
+  -e, --excluded <EXCLUDED>    List of excluded entries (just the name, it can match any part of the path)
+  -R, --show-root
+  -m, --max-depth <MAX_DEPTH>  Maximum depth of traversal, unlimited by default, children of root has depth 1
+  -t, --threads <THREADS>      Number of threads to use, not specified means 1 thread, 0 means to use all logical CPUs
+  -l, --dont-traverse-links    Do not traverse directory symbolic links
+  -f, --hide-files             Hide files from the output (cdf / codef)
+  -d, --hide-directories       Hide directories from the output, but they are still walked (cdf / codef)
+  -D, --show-dots              Add entries that start with dot (hidden on unix systems)
+  -H, --show-hidden            Add entries with hidden NTFS attribute  (hidden on windows systems)
+  -a, --absolute-paths         Use absolute paths, don't trim the output
+  -v, --verbose                Verbose output for debugging
+  -h, --help                   Print help information
+  -V, --version                Print version information
+
+
+
+
+
+
 ```ps1
 # injections work
 cargo run -- "." -fd -I ".\.git\" -I ".\.gitignore"

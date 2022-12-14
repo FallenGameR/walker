@@ -2,10 +2,10 @@ mod args;
 mod node;
 use args::Args;
 use crossbeam_channel::unbounded;
-use jwalk::{WalkDir, DirEntry};
+use jwalk::{DirEntry, Error, WalkDir, WalkDirGeneric};
 use node::Node;
+use std::{cmp::Ordering, fs, path::PathBuf, thread};
 use threadpool::ThreadPool;
-use std::{fs, path::PathBuf, thread};
 
 fn main() {
     let args = Args::new();
@@ -42,8 +42,8 @@ fn main() {
     match fs::metadata(&path) {
         Ok(meta) => {
             let root = Node::new_root(path, meta);
-            walk(&args, root);
-            //jwalk(&args, root);
+            //walk(&args, root); // 3s for PfGold
+            jwalk(&args, root).unwrap(); // 0.8s for PfGold
         }
         Err(error) => {
             if args.verbose {
@@ -56,21 +56,53 @@ fn main() {
     };
 }
 
-fn jwalk(args: &Args, root: Node) {
-    for entry in WalkDir::new(root.path).sort(true) {// {
+fn jwalk(args: &Args, root: Node) -> Result<(), Error> {
+    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(root.path);
 
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(err) =>  {
-                if args.verbose {
-                    println!("Problem receiving from unbound channel, error {err:?}");
+
+
+
+    let walk_dir = walk_dir.process_read_dir(|depth, path, read_dir_state, children| {
+        /*
+        // 1. Custom sort
+        children.sort_by(|a, b| match (a, b) {
+            (Ok(a), Ok(b)) => a.file_name.cmp(&b.file_name),
+            (Ok(_), Err(_)) => Ordering::Less,
+            (Err(_), Ok(_)) => Ordering::Greater,
+            (Err(_), Err(_)) => Ordering::Equal,
+        });
+        // 2. Custom filter
+        children.retain(|dir_entry_result| {
+            dir_entry_result.as_ref().map(|dir_entry| {
+                dir_entry.file_name
+                    .to_str()
+                    .map(|s| s.starts_with('.'))
+                    .unwrap_or(false)
+            }).unwrap_or(false)
+        });
+        // 3. Custom skip
+        children.iter_mut().for_each(|dir_entry_result| {
+            if let Ok(dir_entry) = dir_entry_result {
+                if dir_entry.depth == 2 {
+                    dir_entry.read_children_path = None;
                 }
-                continue;
             }
-        };
+        });
+        // 4. Custom state
+        *read_dir_state += 1;
+        children.first_mut().map(|dir_entry_result| {
+            if let Ok(dir_entry) = dir_entry_result {
+                dir_entry.client_state = true;
+            }
+        });
+        */
+    });
 
-        println!("{}", entry.path().display());
-      }
+    for entry in walk_dir {
+        println!("{}", entry?.path().display());
+    }
+
+    Ok(())
 }
 
 /// To support breadth first approach and parrallelizm we need
@@ -84,7 +116,6 @@ fn jwalk(args: &Args, root: Node) {
 /// https://docs.rs/crossbeam/0.8.2/crossbeam/macro.select.html
 ///
 fn walk(args: &Args, root: Node) {
-
     // Prepare thread pool
     let (s, r) = unbounded();
     let logical_cpus = args.threads.unwrap();
@@ -95,14 +126,14 @@ fn walk(args: &Args, root: Node) {
         let (s, r) = (s.clone(), r.clone());
 
         let lambda = move || {
-
             // WTF: Why does printf here affects allocated threads?
             //let thread = thread::current();
             //let id = thread.id();
             //print!("{id:?}/");
             print!("");
 
-            while !r.is_empty() { // rather until there is no work for either thread
+            while !r.is_empty() {
+                // rather until there is no work for either thread
                 let node = match r.recv() {
                     Ok(node) => node,
                     Err(err) => {
@@ -167,7 +198,7 @@ fn walk(args: &Args, root: Node) {
                                     println!("Problem sending new_node to unbound channel, error {err:?}");
                                 }
                                 continue;
-                            },
+                            }
                         };
                     }
                 }
@@ -186,7 +217,7 @@ fn walk(args: &Args, root: Node) {
                 println!("Problem sending root to unbound channel, error {err:?}");
             }
             return;
-        },
+        }
     };
 
     pool.join();
