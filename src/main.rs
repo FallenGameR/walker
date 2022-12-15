@@ -57,21 +57,29 @@ fn main() {
 }
 
 fn jwalk(root: Node) -> Result<(), Error> {
-    let walk_dir = WalkDirGeneric::<((),())>::new(root.path);
+    let walk_dir = WalkDir::new(root.path);
+    let excluded = &Args::get().excluded;
 
-    let walk_dir = walk_dir.process_read_dir(|depth, path, state, children| {
+    let walk_dir = walk_dir.process_read_dir(|depth, parent, _, children| {
+        // Don't include excluded, that makes them not traversible as well
+        children.retain(|result| {
+            if let Ok(entry) = result {
+                let name = entry.file_name.to_ascii_lowercase();
+                return !excluded.contains(&name);
+            }
+            false
+        });
 
-        let excluded = &Args::cmd().excluded;
-
-        // Exclude explicitly excluded
+        // Don't traverse excluded, but retain them
         //children.iter_mut().for_each(|result| {
         //    if let Ok(entry) = result {
         //        let name = entry.file_name.to_ascii_lowercase();
-        //        if args.excluded.contains(&name) {
+        //        if excluded.contains(&name) {
         //            entry.read_children_path = None
         //        }
         //    }
         //});
+
 
         /*
         // 1. Custom sort
@@ -81,15 +89,7 @@ fn jwalk(root: Node) -> Result<(), Error> {
             (Err(_), Ok(_)) => Ordering::Greater,
             (Err(_), Err(_)) => Ordering::Equal,
         });
-        // 2. Custom filter
-        children.retain(|result| {
-            result.as_ref().map(|entry| {
-                entry.file_name
-                    .to_str()
-                    .map(|s| s.starts_with('.'))
-                    .unwrap_or(false)
-            }).unwrap_or(false)
-        });
+
         // 3. Custom skip
         children.iter_mut().for_each(|result| {
             if let Ok(entry) = result {
@@ -110,7 +110,7 @@ fn jwalk(root: Node) -> Result<(), Error> {
 
     for entry in walk_dir {
         let entry = entry?;
-        println!("{:?} - {}", entry.file_name, entry.path().display());
+        println!("{}", entry.path().display());
     }
 
     Ok(())
