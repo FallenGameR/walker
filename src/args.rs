@@ -1,7 +1,9 @@
 use crate::normalize;
 use clap::Parser;
+use once_cell::sync::OnceCell;
 use std::{path::PathBuf, collections::HashSet, ffi::OsString};
 
+#[derive(Debug, Clone)]
 pub struct Args {
     /// Start directory from where the walk started, ends with /
     pub start_dir: String,
@@ -9,10 +11,9 @@ pub struct Args {
     /// Maximum depth of traversal resolved from max_depth
     pub max_depth_resolved: usize,
 
-
     pub excluded: HashSet<OsString>,
 
-    pub command_line: CommandLine
+    pub cmd: CommandLine
 }
 
 /// Fast folder walker to be used as replacement for the default fzf walker
@@ -68,7 +69,17 @@ pub struct CommandLine {
     pub verbose: bool,
 }
 
+pub static ARGS: OnceCell<Args> = OnceCell::new();
+
 impl Args {
+    pub fn get() -> &'static Args {
+        ARGS.get().expect("ARGS are not initialized")
+    }
+
+    pub fn cmd() -> &'static CommandLine {
+        &Args::get().cmd
+    }
+
     pub fn new() -> Args {
         let command_line = CommandLine::parse();
         Args {
@@ -82,7 +93,7 @@ impl Args {
                     .map(|e| OsString::from(e))
                     .collect()
             },
-            command_line,
+            cmd: command_line,
         }
     }
 

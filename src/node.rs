@@ -21,11 +21,11 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(args: &Args, entry: Result<DirEntry, std::io::Error>, depth: usize) -> Option<Node> {
+    pub fn new(entry: Result<DirEntry, std::io::Error>, depth: usize) -> Option<Node> {
         let entry = match entry {
             Ok(entry) => entry,
             Err(error) => {
-                if args.verbose {
+                if Args::cmd().verbose {
                     eprintln!("ERR: failed to open file system entry, error {:?}", error);
                 }
                 return None;
@@ -35,7 +35,7 @@ impl Node {
         let meta = match entry.metadata() {
             Ok(meta) => meta,
             Err(error) => {
-                if args.verbose {
+                if Args::cmd().verbose {
                     eprintln!(
                         "ERR: failed to read metadata for file system entry, error {:?}",
                         error
@@ -60,10 +60,10 @@ impl Node {
         }
     }
 
-    pub fn new_injected(args: &Args, path: &str) -> Option<Node> {
+    pub fn new_injected(path: &str) -> Option<Node> {
         let path = PathBuf::from(path);
         if !path.exists() {
-            if args.verbose {
+            if Args::cmd().verbose {
                 eprintln!(
                     "ERR: skipping injected path {} since it does not exist",
                     path.display()
@@ -75,7 +75,7 @@ impl Node {
         let meta = match fs::metadata(&path) {
             Ok(meta) => meta,
             Err(error) => {
-                if args.verbose {
+                if Args::cmd().verbose {
                     eprintln!(
                         "ERR: failed to read metadata for injected path {}, error {:?}",
                         path.display(),

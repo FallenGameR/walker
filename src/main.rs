@@ -1,6 +1,6 @@
 mod args;
 mod node;
-use args::Args;
+use args::{Args, ARGS};
 use crossbeam_channel::unbounded;
 use jwalk::{DirEntry, Error, WalkDir, WalkDirGeneric};
 use node::Node;
@@ -8,45 +8,45 @@ use std::{cmp::Ordering, fs, path::PathBuf, thread, collections::HashSet, ffi::O
 use threadpool::ThreadPool;
 
 fn main() {
-    let args = Args::new();
+    ARGS.set(Args::new()).expect("Could not initialize ARGS");
 
     // Arguments sanity check
-    if args.command_line.hide_files && args.command_line.hide_directories && !args.command_line.show_root && (args.command_line.included.len() == 0) {
+    if Args::get().cmd.hide_files && Args::get().cmd.hide_directories && !Args::get().cmd.show_root && (Args::get().cmd.included.len() == 0) {
         eprintln!("ERR: nothing to show, arguments instruct to hide files, directories, root and nothing is injected");
         return;
     }
 
     // Injections are inserted here
-    for node in args
-        .command_line.included
+    for node in Args::get().cmd
+        .included
         .iter()
-        .filter_map(|path| Node::new_injected(&args, &path))
+        .filter_map(|path| Node::new_injected(&path))
     {
         // Don't trim and ignore -fd flags
         let path = node.path.display().to_string();
-        show(&args, &node, &path);
+        show(&node, &path);
     }
 
     // Insert start directory here
-    if args.command_line.show_root {
-        if let Some(node) = Node::new_injected(&args, &args.start_dir) {
+    if Args::cmd().show_root {
+        if let Some(node) = Node::new_injected(&Args::get().start_dir) {
             // Trim but ignore -fd flags
-            let path = trim(&args, &node);
-            show(&args, &node, &path);
+            let path = trim(&node);
+            show(&node, &path);
         };
     }
 
     // Start walking from the start directory
-    let path = PathBuf::from(&args.start_dir);
+    let path = PathBuf::from(&Args::get().start_dir);
 
     match fs::metadata(&path) {
         Ok(meta) => {
             let root = Node::new_root(path, meta);
-            //walk(&args, root); // 3s for PfGold
-            jwalk(&args, root).unwrap(); // 0.8s for PfGold
+            //walk(root); // 3s for PfGold
+            jwalk(root).unwrap(); // 0.8s for PfGold
         }
         Err(error) => {
-            if args.command_line.verbose {
+            if Args::cmd().verbose {
                 eprintln!(
                     "ERR: failed to read metadata for start path {:?}, error {:?}",
                     &path, error
@@ -56,21 +56,18 @@ fn main() {
     };
 }
 
-fn jwalk(args: &Args, root: Node) -> Result<(), Error> {
-    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(root.path);
+fn jwalk(root: Node) -> Result<(), Error> {
+    let walk_dir = WalkDirGeneric::<((),())>::new(root.path);
 
-    let excluded = &args.excluded;
     let walk_dir = walk_dir.process_read_dir(|depth, path, state, children| {
 
-        //if excluded.len() == 0 {
-        //    println!();
-        //}
+        let excluded = &Args::cmd().excluded;
 
         // Exclude explicitly excluded
         //children.iter_mut().for_each(|result| {
         //    if let Ok(entry) = result {
         //        let name = entry.file_name.to_ascii_lowercase();
-        //        if excluded.contains(&name) {
+        //        if args.excluded.contains(&name) {
         //            entry.read_children_path = None
         //        }
         //    }
@@ -151,7 +148,7 @@ fn walk(args: &Args, root: Node) {
                 let node = match r.recv() {
                     Ok(node) => node,
                     Err(err) => {
-                        if args.command_line.verbose {
+                        if args.cmd.verbose {
                             println!("Problem receiving from unbound channel, error {err:?}");
                         }
                         continue;
@@ -159,17 +156,17 @@ fn walk(args: &Args, root: Node) {
                 };
 
                 // Exclude the entry and its descendants
-                if is_excluded(&args, &node) {
+                if is_excluded(&node) {
                     continue;
                 }
 
                 // Show path if allowed
-                let path = trim(&args, &node);
+                let path = trim(&node);
 
-                if needs_showing(&args, &node, &path) {
+                if needs_showing(&node, &path) {
                     //let id = thread::current().id();
                     //print!("{id:?} - ");
-                    show(&args, &node, &path);
+                    show(&node, &path);
                 }
 
                 // Traverse only directories
@@ -178,8 +175,8 @@ fn walk(args: &Args, root: Node) {
                 }
 
                 // Traverse symlinks by default, but this could have been disabled
-                if node.is_link() && args.command_line.dont_traverse_links {
-                    if args.command_line.verbose {
+                if node.is_link() && args.cmd.dont_traverse_links {
+                    if args.cmd.verbose {
                         println!(
                             "Skipping traversal of {} symlink folder because arguments say so | {node:?}",
                             node.path.display()
@@ -192,7 +189,7 @@ fn walk(args: &Args, root: Node) {
                 let iterator = match fs::read_dir(&node.path) {
                     Ok(iterator) => iterator,
                     Err(error) => {
-                        if args.command_line.verbose {
+                        if args.cmd.verbose {
                             eprintln!(
                                 "ERR: failed to read directory {error}, error {:?}",
                                 &node.path.display()
@@ -204,11 +201,11 @@ fn walk(args: &Args, root: Node) {
 
                 // Convert to nodes and do the traversal
                 for entry in iterator {
-                    if let Some(new_node) = Node::new(&args, entry, &node.depth + 1) {
+                    if let Some(new_node) = Node::new(entry, &node.depth + 1) {
                         match s.send(new_node) {
                             Ok(()) => (),
                             Err(err) => {
-                                if args.command_line.verbose {
+                                if args.cmd.verbose {
                                     println!("Problem sending new_node to unbound channel, error {err:?}");
                                 }
                                 continue;
@@ -227,7 +224,7 @@ fn walk(args: &Args, root: Node) {
     match s.send(root) {
         Ok(()) => (),
         Err(err) => {
-            if args.command_line.verbose {
+            if args.cmd.verbose {
                 println!("Problem sending root to unbound channel, error {err:?}");
             }
             return;
@@ -237,12 +234,12 @@ fn walk(args: &Args, root: Node) {
     pool.join();
 }
 
-fn is_excluded(args: &Args, node: &Node) -> bool {
+fn is_excluded(node: &Node) -> bool {
     // Exclude unresolvable
     let file_entry_name = match node.path.file_name() {
         Some(name) => name,
         None => {
-            if args.command_line.verbose {
+            if Args::cmd().verbose {
                 eprintln!("ERR: failed to get the file name for the node | {node:?}");
             }
             return true;
@@ -250,23 +247,23 @@ fn is_excluded(args: &Args, node: &Node) -> bool {
     };
 
     // Exclude when max depth limit is reached
-    if node.depth > args.max_depth_resolved {
-        if args.command_line.verbose {
+    if node.depth > Args::get().max_depth_resolved {
+        if Args::cmd().verbose {
             println!(
                 "Excluding {} entry because max depth limit of {} is reached | {node:?}",
                 file_entry_name.to_string_lossy(),
-                args.max_depth_resolved
+                Args::get().max_depth_resolved
             );
         }
         return true;
     }
 
     // Exclude explicitly excluded
-    for excluded in &args.command_line.excluded {
+    for excluded in &Args::cmd().excluded {
         let lowercase = file_entry_name.to_ascii_lowercase();
         let lowercase = lowercase.to_string_lossy();
         if lowercase == excluded.as_str() {
-            if args.command_line.verbose {
+            if Args::cmd().verbose {
                 println!(
                     "Excluding {} entry because arguments say to exclude {} | {node:?}",
                     file_entry_name.to_string_lossy(),
@@ -278,8 +275,8 @@ fn is_excluded(args: &Args, node: &Node) -> bool {
     }
 
     // Exclude dots (done by default)
-    if !args.command_line.show_dots && node.is_dot() {
-        if args.command_line.verbose {
+    if !Args::cmd().show_dots && node.is_dot() {
+        if Args::cmd().verbose {
             println!(
                 "Excluding {} entry because arguments say to exclude dots | {node:?}",
                 file_entry_name.to_string_lossy()
@@ -289,8 +286,8 @@ fn is_excluded(args: &Args, node: &Node) -> bool {
     }
 
     // Exclude hidden (done by default)
-    if !args.command_line.show_hidden && node.is_hidden() {
-        if args.command_line.verbose {
+    if !Args::cmd().show_hidden && node.is_hidden() {
+        if Args::cmd().verbose {
             println!(
                 "Excluding {} entry because arguments say to exclude hidden | {node:?}",
                 file_entry_name.to_string_lossy()
@@ -302,15 +299,15 @@ fn is_excluded(args: &Args, node: &Node) -> bool {
     false
 }
 
-fn trim(args: &Args, item: &Node) -> String {
+fn trim(item: &Node) -> String {
     let path = normalize(item.path.display());
 
-    if args.command_line.absolute_paths {
+    if Args::cmd().absolute_paths {
         return path;
     }
 
     // use .\ prefix, otherwise it will look like /usr - absolute path in unix
-    let removed = args.start_dir.len();
+    let removed = Args::get().start_dir.len();
     let remaining = path.len() - removed;
     let mut result = String::with_capacity(2 + remaining);
     result.push('.');
@@ -328,18 +325,18 @@ pub fn normalize(path: std::path::Display) -> String {
     path.collect()
 }
 
-fn needs_showing(args: &Args, node: &Node, path: &str) -> bool {
+fn needs_showing(node: &Node, path: &str) -> bool {
     // Hide files
-    if args.command_line.hide_files && node.is_file() {
-        if args.command_line.verbose {
+    if Args::cmd().hide_files && node.is_file() {
+        if Args::cmd().verbose {
             println!("Hiding {path} file because arguments say to hide files | {node:?}");
         }
         return false;
     }
 
     // Hide directories, but it is still walked
-    if args.command_line.hide_directories && node.is_directory() {
-        if args.command_line.verbose {
+    if Args::cmd().hide_directories && node.is_directory() {
+        if Args::cmd().verbose {
             println!(
                 "Hiding {path} directory because arguments say to hide directories | {node:?}"
             );
@@ -350,8 +347,8 @@ fn needs_showing(args: &Args, node: &Node, path: &str) -> bool {
     true
 }
 
-fn show(args: &Args, node: &Node, path: &str) {
-    if args.command_line.verbose {
+fn show(node: &Node, path: &str) {
+    if Args::cmd().verbose {
         println!("{path} | {node:?}");
     } else {
         println!("{path}");
