@@ -81,7 +81,7 @@ fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
         let show_dir = show_dirs && (kind.is_dir() || kind.is_symlink());
 
         if show_file || show_dir {
-            println!("{}", entry.path().display());
+            println!("{}", entry.path().display());//entry.client_state);
         }
     }
 
@@ -105,3 +105,13 @@ fn trim(path: std::path::Display) -> String {
     //result.push_str(path.split_at(removed).1);
     //result
 }
+
+pub fn normalize(path: std::path::Display) -> String {
+    let path = path.to_string();
+    let path = path.chars().map(|c| match c {
+        '/' => std::path::MAIN_SEPARATOR,
+        _ => c,
+    });
+    path.collect()
+}
+
