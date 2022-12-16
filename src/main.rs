@@ -1,9 +1,9 @@
 mod args;
 mod node;
 use args::{Args, ARGS};
-use jwalk::{Error, WalkDir};
+use jwalk::{Error, WalkDirGeneric};
 use node::Node;
-use std::{fs, path::{PathBuf, Path}};
+use std::{path::{Path}};
 
 fn main() {
     ARGS.set(Args::new()).expect("Could not initialize ARGS");
@@ -27,17 +27,16 @@ fn main() {
     {
         // Don't trim and ignore -fd flags
         let path = node.path.display().to_string();
-        show(&path);
+        println!("{path}");
     }
 
     // Start walking from the start directory
-    let path = PathBuf::from(&Args::get().start_dir);
-    jwalk(path).unwrap(); // 0.8s for PfGold
+    jwalk(&Args::get().start_dir).unwrap(); // 0.8s for PfGold
 }
 
 fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
     // Construct walker
-    let walk_dir = WalkDir::new(root)
+    let walk_dir = WalkDirGeneric::<((), String)>::new(root)
         .max_depth(Args::get().max_depth_resolved)
         .follow_links(!Args::cmd().dont_traverse_links)
         .skip_hidden(!Args::cmd().show_dots);
@@ -52,6 +51,11 @@ fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
             }
             false
         });
+
+        //children.as_mut().map(|dir_entry_result| {
+        //    if let Ok(dir_entry) = dir_entry_result {
+        //        dir_entry.client_state = true;
+        //    });
     });
 
     // Root is rendered separatelly
@@ -82,8 +86,8 @@ fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
     Ok(())
 }
 
-fn trim(item: &Node) -> String {
-    let path = normalize(item.path.display());
+fn trim(path: std::path::Display) -> String {
+    let path = normalize(path);
 
     if Args::cmd().absolute_paths {
         return path;
@@ -108,6 +112,3 @@ pub fn normalize(path: std::path::Display) -> String {
     path.collect()
 }
 
-fn show(path: &str) {
-    println!("{path}");
-}
