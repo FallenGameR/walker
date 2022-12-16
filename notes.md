@@ -42,10 +42,16 @@ cargo run -- -I "Included but absent" --included ".vscode" | select -f 10
 
 cargo run -- -e target
 
-  -e, --excluded <EXCLUDED>    List of excluded entries (just the name, it can match any part of the path)
-  -R, --show-root
-  -m, --max-depth <MAX_DEPTH>  Maximum depth of traversal, unlimited by default, children of root has depth 1
-  -t, --threads <THREADS>      Number of threads to use, not specified means 1 thread, 0 means to use all logical CPUs
+> walker -R, --show-root // Include root folder to the output
+
+cargo run -- -e target -R
+
+> walker -m, --max-depth <MAX_DEPTH>  Maximum depth of traversal, unlimited by default, children of root has depth 1
+
+cargo run -- -m 1
+
+  
+  
   -l, --dont-traverse-links    Do not traverse directory symbolic links
   -f, --hide-files             Hide files from the output (cdf / codef)
   -d, --hide-directories       Hide directories from the output, but they are still walked (cdf / codef)

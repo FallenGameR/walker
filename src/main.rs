@@ -27,15 +27,6 @@ fn main() {
         show(&node, &path);
     }
 
-    // Insert start directory here
-    if Args::cmd().show_root {
-        if let Some(node) = Node::new_injected(&Args::get().start_dir) {
-            // Trim but ignore -fd flags
-            let path = trim(&node);
-            show(&node, &path);
-        };
-    }
-
     // Start walking from the start directory
     let path = PathBuf::from(&Args::get().start_dir);
 
@@ -58,6 +49,8 @@ fn main() {
 
 fn jwalk(root: Node) -> Result<(), Error> {
     let walk_dir = WalkDir::new(root.path);
+    let walk_dir = walk_dir.max_depth(Args::get().max_depth_resolved);
+
     let excluded = &Args::get().excluded;
 
     let walk_dir = walk_dir.process_read_dir(|depth, parent, _, children| {
@@ -108,7 +101,19 @@ fn jwalk(root: Node) -> Result<(), Error> {
         */
     });
 
-    for entry in walk_dir {
+    // Root has special meaning
+    let mut iter = walk_dir.into_iter();
+    let first = iter.nth(0);
+
+    if Args::cmd().show_root {
+        if let Some(entry) = first {
+            let entry = entry?;
+            println!("{}", entry.path().display());
+        }
+    }
+
+    // Show all the entries
+    for entry in iter {
         let entry = entry?;
         println!("{}", entry.path().display());
     }

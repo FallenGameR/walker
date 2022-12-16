@@ -32,7 +32,7 @@ pub struct CommandLine {
     #[arg(short = 'e', long)]
     pub excluded: Vec<String>,
 
-    // Include root folder to the output
+    /// Include root folder to the output
     #[arg(short = 'R', long)]
     pub show_root: bool,
 
