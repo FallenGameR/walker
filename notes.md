@@ -50,9 +50,10 @@ cargo run -- -e target -R
 
 cargo run -- -m 1
 
-  
-  
-  -l, --dont-traverse-links    Do not traverse directory symbolic links
+> walker -l, --dont-traverse-links    Do not traverse directory symbolic links
+
+cargo run -- ~\Documents\Powershell\Modules -e pstoolset -l
+
   -f, --hide-files             Hide files from the output (cdf / codef)
   -d, --hide-directories       Hide directories from the output, but they are still walked (cdf / codef)
   -D, --show-dots              Add entries that start with dot (hidden on unix systems)
