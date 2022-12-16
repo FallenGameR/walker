@@ -36,32 +36,32 @@ fn main() {
 
 fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
     // Construct walker
-    let walk_dir = WalkDirGeneric::<((), String)>::new(root)
-        .max_depth(Args::get().max_depth_resolved)
+    let walker = WalkDirGeneric::<((), String)>::new(root)
+        .max_depth(Args::get().max_depth)
         .follow_links(!Args::cmd().dont_traverse_links)
         .skip_hidden(!Args::cmd().show_dots);
 
     // Children processing
     let excluded = &Args::get().excluded;
-    let walk_dir = walk_dir.process_read_dir(|_, _, _, children| {
+    let walker = walker.process_read_dir(|_, _, _, children| {
         // Don't retain excluded; that makes excluded not traversible as well
         children.retain(|item| {
-            if let Ok(entry) = item {
-                let name = entry.file_name.to_ascii_lowercase();
-                return !excluded.contains(&name);
+            match item {
+                Ok(entry) => !excluded.contains(&entry.file_name.to_ascii_lowercase()),
+                Err(____) => false,
             }
-            false
         });
 
-        for child in children.iter_mut() {
-            if let Ok(entry) = child {
+        // Prepare output line
+        for item in children.iter_mut() {
+            if let Ok(entry) = item {
                 entry.client_state = trim(entry.path().display());
             }
         };
     });
 
     // Root is rendered separatelly
-    let mut iter = walk_dir.into_iter();
+    let mut iter = walker.into_iter();
     let first = iter.nth(0);
     if Args::cmd().show_root {
         if let Some(entry) = first {

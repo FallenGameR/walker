@@ -52,7 +52,6 @@ cargo run -- -D -m 2
 
 
 
-
 ## Performance
 
 ```ps1

@@ -9,7 +9,7 @@ pub struct Args {
     pub start_dir: String,
 
     /// Maximum depth of traversal resolved from max_depth
-    pub max_depth_resolved: usize,
+    pub max_depth: usize,
 
     pub excluded: HashSet<OsString>,
 
@@ -84,7 +84,7 @@ impl Args {
         let command_line = CommandLine::parse();
         Args {
             start_dir: Self::resolve_start_dir(&command_line.path),
-            max_depth_resolved: command_line.max_depth.unwrap_or(usize::MAX),
+            max_depth: command_line.max_depth.unwrap_or(usize::MAX),
             excluded: {
                 let excluded = &command_line.excluded;
                 excluded
