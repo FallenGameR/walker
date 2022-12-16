@@ -4,20 +4,28 @@ use args::{Args, ARGS};
 use crossbeam_channel::unbounded;
 use jwalk::{DirEntry, Error, WalkDir, WalkDirGeneric};
 use node::Node;
-use std::{cmp::Ordering, fs, path::PathBuf, thread, collections::HashSet, ffi::OsString, os::windows::prelude::MetadataExt};
+use std::{
+    cmp::Ordering, collections::HashSet, ffi::OsString, fs, os::windows::prelude::MetadataExt,
+    path::PathBuf, thread,
+};
 use threadpool::ThreadPool;
 
 fn main() {
     ARGS.set(Args::new()).expect("Could not initialize ARGS");
 
     // Arguments sanity check
-    if Args::get().cmd.hide_files && Args::get().cmd.hide_directories && !Args::get().cmd.show_root && (Args::get().cmd.included.len() == 0) {
+    if Args::get().cmd.hide_files
+        && Args::get().cmd.hide_directories
+        && !Args::get().cmd.show_root
+        && (Args::get().cmd.included.len() == 0)
+    {
         eprintln!("ERR: nothing to show, arguments instruct to hide files, directories, root and nothing is injected");
         return;
     }
 
     // Injections are inserted here
-    for node in Args::get().cmd
+    for node in Args::get()
+        .cmd
         .included
         .iter()
         .filter_map(|path| Node::new_injected(&path))
@@ -34,7 +42,7 @@ fn main() {
         Ok(meta) => {
             let root = Node::new_root(path, meta);
             //walk(root);           // 3s for PfGold
-            jwalk(root).unwrap();   // 0.8s for PfGold
+            jwalk(root).unwrap(); // 0.8s for PfGold
         }
         Err(error) => {
             if Args::cmd().verbose {
@@ -51,6 +59,7 @@ fn jwalk(root: Node) -> Result<(), Error> {
     let walk_dir = WalkDir::new(root.path);
     let walk_dir = walk_dir.max_depth(Args::get().max_depth_resolved);
     let walk_dir = walk_dir.follow_links(!Args::cmd().dont_traverse_links);
+    let walk_dir = walk_dir.skip_hidden(!Args::cmd().show_dots);
 
     let excluded = &Args::get().excluded;
 
@@ -73,7 +82,6 @@ fn jwalk(root: Node) -> Result<(), Error> {
         //        }
         //    }
         //});
-
 
         /*
         // 1. Custom sort
@@ -114,23 +122,29 @@ fn jwalk(root: Node) -> Result<(), Error> {
     }
 
     // Show all the entries
+    let show_files = !Args::cmd().hide_files;
+    let show_dirs = !Args::cmd().hide_directories;
+
     for entry in iter {
         let entry = entry?;
+        let kind = entry.file_type;
+        let show_file = show_files && kind.is_file();
+        let show_dir = show_dirs && (kind.is_dir() || kind.is_symlink());
+        let show = show_file || show_dir;
 
-        //let hide =             Args::cmd().hide_files
+        if show {
+            println!("{}", entry.path().display());
+        }
 
-        //let meta = entry.metadata()?;
-        //meta.file_attributes()
-
-        println!(
-            "d={},f={},s={}|d={},f={},s={} - {}",
-            entry.file_type.is_dir(),
-            entry.file_type.is_file(),
-            entry.file_type.is_symlink(),
-            meta.is_dir(),
-            meta.is_file(),
-            meta.is_symlink(),
-            entry.path().display());
+        //println!(
+        //    "d={},f={},s={}|d={},f={},s={} - {}",
+        //    entry.file_type.is_dir(),
+        //    entry.file_type.is_file(),
+        //    entry.file_type.is_symlink(),
+        //    meta.is_dir(),
+        //    meta.is_file(),
+        //    meta.is_symlink(),
+        //    entry.path().display());
     }
 
     Ok(())
