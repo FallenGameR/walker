@@ -1,14 +1,9 @@
 mod args;
 mod node;
 use args::{Args, ARGS};
-use crossbeam_channel::unbounded;
-use jwalk::{DirEntry, Error, WalkDir, WalkDirGeneric};
+use jwalk::{Error, WalkDir};
 use node::Node;
-use std::{
-    cmp::Ordering, collections::HashSet, ffi::OsString, fs, os::windows::prelude::MetadataExt,
-    path::PathBuf, thread,
-};
-use threadpool::ThreadPool;
+use std::{fs, path::{PathBuf, Path}};
 
 fn main() {
     ARGS.set(Args::new()).expect("Could not initialize ARGS");
@@ -32,39 +27,24 @@ fn main() {
     {
         // Don't trim and ignore -fd flags
         let path = node.path.display().to_string();
-        show(&node, &path);
+        show(&path);
     }
 
     // Start walking from the start directory
     let path = PathBuf::from(&Args::get().start_dir);
-
-    match fs::metadata(&path) {
-        Ok(meta) => {
-            let root = Node::new_root(path, meta);
-            //walk(root);           // 3s for PfGold
-            jwalk(root).unwrap(); // 0.8s for PfGold
-        }
-        Err(error) => {
-            if Args::cmd().verbose {
-                eprintln!(
-                    "ERR: failed to read metadata for start path {:?}, error {:?}",
-                    &path, error
-                );
-            }
-        }
-    };
+    jwalk(path).unwrap(); // 0.8s for PfGold
 }
 
-fn jwalk(root: Node) -> Result<(), Error> {
-    let walk_dir = WalkDir::new(root.path);
-    let walk_dir = walk_dir.max_depth(Args::get().max_depth_resolved);
-    let walk_dir = walk_dir.follow_links(!Args::cmd().dont_traverse_links);
-    let walk_dir = walk_dir.skip_hidden(!Args::cmd().show_dots);
+fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
+    // Construct walker
+    let walk_dir = WalkDir::new(root)
+        .max_depth(Args::get().max_depth_resolved)
+        .follow_links(!Args::cmd().dont_traverse_links)
+        .skip_hidden(!Args::cmd().show_dots);
 
+    // Don't retain excluded; that makes excluded not traversible as well
     let excluded = &Args::get().excluded;
-
-    let walk_dir = walk_dir.process_read_dir(|depth, parent, _, children| {
-        // Don't retain excluded; that makes excluded not traversible as well
+    let walk_dir = walk_dir.process_read_dir(|_, _, _, children| {
         children.retain(|result| {
             if let Ok(entry) = result {
                 let name = entry.file_name.to_ascii_lowercase();
@@ -72,48 +52,11 @@ fn jwalk(root: Node) -> Result<(), Error> {
             }
             false
         });
-
-        // Don't traverse excluded, but retain them
-        //children.iter_mut().for_each(|result| {
-        //    if let Ok(entry) = result {
-        //        let name = entry.file_name.to_ascii_lowercase();
-        //        if excluded.contains(&name) {
-        //            entry.read_children_path = None
-        //        }
-        //    }
-        //});
-
-        /*
-        // 1. Custom sort
-        children.sort_by(|a, b| match (a, b) {
-            (Ok(a), Ok(b)) => a.file_name.cmp(&b.file_name),
-            (Ok(_), Err(_)) => Ordering::Less,
-            (Err(_), Ok(_)) => Ordering::Greater,
-            (Err(_), Err(_)) => Ordering::Equal,
-        });
-
-        // 3. Custom skip
-        children.iter_mut().for_each(|result| {
-            if let Ok(entry) = result {
-                if entry.depth == 2 {
-                    entry.read_children_path = None;
-                }
-            }
-        });
-        // 4. Custom state
-        *state += 1;
-        children.first_mut().map(|result| {
-            if let Ok(entry) = result {
-                entry.client_state = true;
-            }
-        });
-        */
     });
 
-    // Root has special meaning
+    // Root is rendered separatelly
     let mut iter = walk_dir.into_iter();
     let first = iter.nth(0);
-
     if Args::cmd().show_root {
         if let Some(entry) = first {
             let entry = entry?;
@@ -124,27 +67,16 @@ fn jwalk(root: Node) -> Result<(), Error> {
     // Show all the entries
     let show_files = !Args::cmd().hide_files;
     let show_dirs = !Args::cmd().hide_directories;
-
     for entry in iter {
         let entry = entry?;
+
         let kind = entry.file_type;
         let show_file = show_files && kind.is_file();
         let show_dir = show_dirs && (kind.is_dir() || kind.is_symlink());
-        let show = show_file || show_dir;
 
-        if show {
+        if show_file || show_dir {
             println!("{}", entry.path().display());
         }
-
-        //println!(
-        //    "d={},f={},s={}|d={},f={},s={} - {}",
-        //    entry.file_type.is_dir(),
-        //    entry.file_type.is_file(),
-        //    entry.file_type.is_symlink(),
-        //    meta.is_dir(),
-        //    meta.is_file(),
-        //    meta.is_symlink(),
-        //    entry.path().display());
     }
 
     Ok(())
@@ -176,10 +108,6 @@ pub fn normalize(path: std::path::Display) -> String {
     path.collect()
 }
 
-fn show(node: &Node, path: &str) {
-    if Args::cmd().verbose {
-        println!("{path} | {node:?}");
-    } else {
-        println!("{path}");
-    }
+fn show(path: &str) {
+    println!("{path}");
 }
