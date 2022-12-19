@@ -1,4 +1,3 @@
-use crate::normalize;
 use clap::Parser;
 use once_cell::sync::OnceCell;
 use std::{path::PathBuf, collections::HashSet, ffi::OsString};
@@ -11,8 +10,13 @@ pub struct Args {
     /// Maximum depth of traversal resolved from max_depth
     pub max_depth: usize,
 
-    pub excluded: HashSet<OsString>,
+    /// Excluded folders in lowercase
+    pub excluded_lowercase: HashSet<OsString>,
 
+    /// Included folders that do exist
+    pub included_existing: Vec<PathBuf>,
+
+    /// Original command line
     pub cmd: CommandLine
 }
 
@@ -85,14 +89,16 @@ impl Args {
         Args {
             start_dir: Self::resolve_start_dir(&command_line.path),
             max_depth: command_line.max_depth.unwrap_or(usize::MAX),
-            excluded: {
-                let excluded = &command_line.excluded;
-                excluded
-                    .into_iter()
-                    .map(|e| e.to_ascii_lowercase())
-                    .map(|e| OsString::from(e))
-                    .collect()
-            },
+            excluded_lowercase: (&command_line.excluded)
+                .iter()
+                .map(|e| e.to_ascii_lowercase())
+                .map(|e| OsString::from(e))
+                .collect(),
+            included_existing: (&command_line.included)
+                .iter()
+                .map(|path| PathBuf::from(path))
+                .filter(|path| path.exists())
+                .collect(),
             cmd: command_line,
         }
     }
@@ -146,4 +152,13 @@ impl Args {
         // uses \ and there is no trailing \
         std::env::current_dir().unwrap()
     }
+}
+
+fn normalize(path: std::path::Display) -> String {
+    let path = path.to_string();
+    let path = path.chars().map(|c| match c {
+        '/' => std::path::MAIN_SEPARATOR,
+        _ => c,
+    });
+    path.collect()
 }

@@ -1,9 +1,7 @@
 mod args;
-mod node;
 use args::{Args, ARGS};
 use jwalk::{Error, WalkDirGeneric};
-use node::Node;
-use std::{path::{Path}};
+use std::{cmp, path::Path};
 
 fn main() {
     ARGS.set(Args::new()).expect("Could not initialize ARGS");
@@ -19,14 +17,9 @@ fn main() {
     }
 
     // Injections are inserted here
-    for node in Args::get()
-        .cmd
-        .included
-        .iter()
-        .filter_map(|path| Node::new_injected(&path))
-    {
+    for path in &Args::get().included_existing {
         // Don't trim and ignore -fd flags
-        let path = node.path.display().to_string();
+        let path = path.display().to_string();
         println!("{path}");
     }
 
@@ -42,22 +35,20 @@ fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
         .skip_hidden(!Args::cmd().show_dots);
 
     // Children processing
-    let excluded = &Args::get().excluded;
+    let excluded = &Args::get().excluded_lowercase;
     let walker = walker.process_read_dir(|_, _, _, children| {
         // Don't retain excluded; that makes excluded not traversible as well
-        children.retain(|item| {
-            match item {
-                Ok(entry) => !excluded.contains(&entry.file_name.to_ascii_lowercase()),
-                Err(____) => false,
-            }
+        children.retain(|item| match item {
+            Ok(entry) => !excluded.contains(&entry.file_name.to_ascii_lowercase()),
+            Err(____) => false,
         });
 
         // Prepare output line
         for item in children.iter_mut() {
             if let Ok(entry) = item {
-                entry.client_state = trim(entry.path().display());
+                entry.client_state = render_path(entry.path().display());
             }
-        };
+        }
     });
 
     // Root is rendered separatelly
@@ -66,7 +57,7 @@ fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
     if Args::cmd().show_root {
         if let Some(entry) = first {
             let entry = entry?;
-            println!("{}", entry.path().display());
+            println!("{}", entry.client_state);
         }
     }
 
@@ -81,37 +72,26 @@ fn jwalk<P: AsRef<Path>>(root: P) -> Result<(), Error> {
         let show_dir = show_dirs && (kind.is_dir() || kind.is_symlink());
 
         if show_file || show_dir {
-            println!("{}", entry.path().display());//entry.client_state);
+            println!("{}", entry.client_state);
         }
     }
 
     Ok(())
 }
 
-fn trim(path: std::path::Display) -> String {
+fn render_path(path: std::path::Display) -> String {
     let path = path.to_string();
 
     if Args::cmd().absolute_paths {
         return path;
     }
 
-    path
-    //// use .\ prefix, otherwise it will look like /usr - absolute path in unix
-    //let removed = Args::get().start_dir.len();
-    //let remaining = path.len() - removed;
-    //let mut result = String::with_capacity(2 + remaining);
-    //result.push('.');
-    //result.push(std::path::MAIN_SEPARATOR);
-    //result.push_str(path.split_at(removed).1);
-    //result
+    // use .\ prefix, otherwise it will look like /usr - absolute path in unix
+    let removed = cmp::min(path.len(), Args::get().start_dir.len());
+    let remaining = path.len() - removed;
+    let mut result = String::with_capacity(2 + remaining);
+    result.push('.');
+    result.push(std::path::MAIN_SEPARATOR);
+    result.push_str(path.split_at(removed).1);
+    result
 }
-
-pub fn normalize(path: std::path::Display) -> String {
-    let path = path.to_string();
-    let path = path.chars().map(|c| match c {
-        '/' => std::path::MAIN_SEPARATOR,
-        _ => c,
-    });
-    path.collect()
-}
-

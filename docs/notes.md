@@ -46,9 +46,10 @@ cargo run -- -d -m 2
 
 cargo run -- -D -m 2
 
+> walker -a, --absolute-paths         // Use absolute paths, don't trim the output
 
+cargo run -- -R -e target -a
 
-  -a, --absolute-paths         Use absolute paths, don't trim the output
 
 
 
@@ -57,6 +58,6 @@ cargo run -- -D -m 2
 ```ps1
 # NOTE: Reading metadata (windows hidden flag and symlink disambiguation) is very expensive
 cargo build -r
-hyperfine.exe ".\target\release\walker.exe d:\src\golds\pf\" # 3s wide
+hyperfine.exe ".\target\release\walker.exe $pfgold" # 3s wide
 $a = cargo run -- d:\src\golds\pf\ # -f
 ```
